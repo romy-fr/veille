@@ -68,7 +68,7 @@ footer{color:var(--mute);font-size:12px;text-align:center;margin-top:18px}
   <div class="chips" id="chips"></div>
   <select id="date" aria-label="Date de parution"></select>
   <div id="liste"></div>
-  <footer>Source : Nature (Springer Nature) · résumés rédigés par Claude à partir des articles en accès libre ·
+  <footer>Source : Nature (Springer Nature) · fiches rédigées par IA (Claude ou GitHub Models) à partir des articles en accès libre ·
     figures sous licence Creative Commons, avec leur crédit · touche un graphique pour l'agrandir</footer>
 </div>
 
@@ -126,8 +126,10 @@ function fiche(a) {
       `<li><b>${esc(e.etape)}</b>${esc(e.texte)}</li>`).join("")}</ol>` : "";
   return `<article class="art"><div class="tags">${tags}</div>
     <h2>${esc(a.titre_fr || a.titre_en)}</h2><p class="orig">${esc(a.titre_en)}</p>
-    <p class="lead">${esc(a.en_une_phrase)}</p>${fig}${kpis}
+    ${a.en_une_phrase ? `<p class="lead">${esc(a.en_une_phrase)}</p>` : ""}${fig}${kpis}
     <h3>Résumé</h3><p class="resume">${esc(a.resume)}</p>${schema}
+    <p class="note">${a.mode === "traduction" ? "Traduction automatique, sans schéma ni chiffres clés : la fiche complète arrivera dès qu'une IA sera disponible."
+      : `Fiche rédigée par ${esc(a.modele || "IA")} à partir de l'article.`}</p>
     <div class="actions">${bouton}${lien}</div></article>`;
 }
 

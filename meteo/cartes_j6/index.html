@@ -41,6 +41,67 @@
   .prod button { width:auto; height:32px; border:0; border-radius:0; padding:0 12px; font-size:13px; background:var(--card); }
   .prod button.on { background:var(--accent); color:#fff; }
   footer { max-width:1400px; margin:0 auto; padding:0 16px 24px; color:var(--mute); font-size:12px; }
+  /* Onglet Prévisions pour un lieu */
+  .pt { max-width:900px; margin:0 auto; padding:14px 16px 28px; }
+  .pt[hidden], main[hidden] { display:none; }
+  .ctrl.pm .btns, .ctrl.pm input, .ctrl.pm .ticks, .ctrl.pm #jlabel, .ctrl.pm #dlabel, .ctrl.pm > div:not(.when) { display:none; }
+  .search { display:flex; gap:8px; flex-wrap:wrap; }
+  .search input { flex:1 1 220px; height:38px; border:1px solid var(--line); border-radius:9px; padding:0 12px;
+                  font-size:15px; background:var(--card); color:var(--ink); }
+  .search button { width:auto; height:38px; padding:0 14px; }
+  .hits { margin:6px 0 0; display:flex; flex-direction:column; gap:4px; }
+  .hits button { width:100%; height:auto; text-align:left; padding:8px 12px; font-size:14px; }
+  .place { margin:14px 0 6px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .place b { font-size:20px; } .place span { color:var(--mute); font-size:13px; }
+  details.day { background:var(--card); border:1px solid var(--line); border-radius:12px; margin:10px 0; overflow:hidden; }
+  details.day summary { list-style:none; cursor:pointer; display:grid; align-items:center; gap:4px 12px; padding:10px 12px;
+                        grid-template-columns:44px 1fr auto; }
+  details.day summary::-webkit-details-marker { display:none; }
+  .dname { font-weight:600; text-transform:capitalize; } .dsrc { color:var(--mute); font-size:12px; }
+  .dstat { text-align:right; font-size:14px; white-space:nowrap; } .dstat small { color:var(--mute); }
+  table.h { width:100%; border-collapse:collapse; font-size:14px; }
+  table.h th { font-weight:500; color:var(--mute); font-size:12px; text-align:right; padding:4px 10px; border-top:1px solid var(--line); }
+  table.h td { padding:3px 10px; border-top:1px solid var(--line); text-align:right; white-space:nowrap; }
+  table.h td:first-child, table.h th:first-child { text-align:left; }
+  table.h td.ic { text-align:center; width:40px; padding:1px 4px; } table.h th.ic { text-align:center; }
+  .wx { width:34px; height:34px; display:block; margin:auto; } summary .wx { width:42px; height:42px; }
+  .t { font-weight:600; } .mm0 { color:var(--mute); }
+  .mm { display:inline-block; min-width:42px; padding:0 6px; border-radius:6px; }
+  .g60 { color:#f2762e; font-weight:600; } .g80 { color:#e0412c; font-weight:700; }
+  .note { color:var(--mute); font-size:12px; margin:10px 2px; }
+  .sub3 { display:flex; gap:6px; margin-bottom:12px; }
+  .sub3 button { width:auto; height:34px; padding:0 14px; font-size:14px; }
+  .sub3 button.on { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  #v-lieu[hidden], #v-seances[hidden], #v-trajet[hidden], .ret[hidden] { display:none; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:10px 0; }
+  .card h3 { margin:0 0 10px; font-size:16px; }
+  .frm { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px 14px; }
+  .frm label, .topic { display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--mute); }
+  .frm input, .frm select, .topic input { height:36px; border:1px solid var(--line); border-radius:8px; padding:0 10px;
+    font-size:15px; background:var(--bg); color:var(--ink); }
+  .frm label.chk { flex-direction:row; align-items:center; gap:8px; color:var(--ink); font-size:14px; }
+  .frm label.chk input { height:auto; }
+  fieldset { border:0; padding:0; margin:0; grid-column:1 / -1; } legend { font-size:13px; color:var(--mute); padding:0 0 4px; }
+  .days { display:flex; gap:6px; flex-wrap:wrap; }
+  .days button { width:46px; height:34px; font-size:13px; } .days button.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .pick { display:block; } .pick .pv { display:flex; gap:6px; } .pick input { flex:1; min-width:0; }
+  .pick .pv button { width:auto; padding:0 10px; height:36px; } .pick .hits button { font-size:13px; padding:6px 10px; }
+  .pick .chosen { color:var(--ink); font-size:13px; margin-top:4px; }
+  .acts { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  button.wide { width:auto; padding:0 16px; height:38px; background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.wide.ghost { background:var(--card); color:var(--ink); border-color:var(--line); }
+  .err { color:#e0412c; font-size:13px; margin:6px 0 0; min-height:0; }
+  .sess { display:grid; grid-template-columns:46px 1fr auto; gap:4px 12px; align-items:start; }
+  .sess .wx { width:44px; height:44px; } .sess h4 { margin:0; font-size:15px; } .sess .sub { font-size:12px; }
+  .sess .txt { font-size:14px; margin-top:4px; } .sess .alert { color:#e0412c; font-size:13px; margin-top:2px; }
+  .mini { display:flex; flex-direction:column; gap:6px; } .mini button { width:auto; height:30px; padding:0 10px; font-size:12px; }
+  .how { margin:8px 0; padding-left:20px; font-size:14px; line-height:1.6; } code { font-size:13px; }
+  textarea { width:100%; margin-top:10px; border:1px solid var(--line); border-radius:8px; padding:8px;
+    font:12px/1.4 ui-monospace, Menlo, monospace; background:var(--bg); color:var(--ink); }
+  .leg { display:grid; grid-template-columns:1fr; gap:8px; }
+  .stop { display:grid; grid-template-columns:52px 1fr; gap:4px 12px; align-items:center; border-top:1px solid var(--line); padding-top:8px; }
+  .stop:first-of-type { border-top:0; padding-top:0; } .stop .wx { width:48px; height:48px; }
+  .stop .k { font-size:12px; color:var(--mute); } .stop .v { font-size:15px; }
 </style>
 </head>
 <body>
@@ -62,7 +123,73 @@
   </div>
 </div>
 <main id="grid"></main>
-<footer>Cartes reconstruites à partir des données ouvertes : NOAA (GFS et AIGFS, domaine public) ·
+<section class="pt" id="point" hidden>
+  <nav class="sub3" id="psub">
+    <button data-v="lieu" class="on">Lieu</button><button data-v="seances">Séances</button><button data-v="trajet">Trajet</button>
+  </nav>
+  <div id="v-lieu">
+    <form class="search" id="psearch">
+      <input id="pq" type="search" placeholder="Ville ou commune" autocomplete="off" aria-label="Lieu">
+      <button type="submit">Chercher</button>
+      <button type="button" id="pgeo" title="Utiliser ma position">📍 Ma position</button>
+    </form>
+    <div class="hits" id="phits"></div>
+    <div class="place" id="pplace"></div>
+    <div id="pdays"></div>
+    <p class="note" id="pnote"></p>
+  </div>
+  <div id="v-seances" hidden>
+    <div class="card">
+      <h3 id="sf-title">Ajouter une séance régulière</h3>
+      <div class="frm">
+        <label>Activité <input id="sf-nom" placeholder="Salle, course, vélo…" maxlength="40"></label>
+        <label>Lieu <span class="pick" id="sf-lieu"></span></label>
+        <fieldset><legend>Jours</legend><div class="days" id="sf-jours"></div></fieldset>
+        <label>Départ <input id="sf-dep" type="time" value="06:00" step="900"></label>
+        <label>Durée (aller → retour) <select id="sf-duree"></select></label>
+        <label>Notification la veille à <select id="sf-notif"></select></label>
+      </div>
+      <div class="acts"><button class="wide" id="sf-ok">Enregistrer la séance</button><button class="wide ghost" id="sf-cancel" hidden>Annuler</button></div>
+      <p class="err" id="sf-err"></p>
+    </div>
+    <div id="s-list"></div>
+    <details class="card"><summary><b>Notifications sur l'iPhone</b> <span class="sub">(à faire une fois)</span></summary>
+      <ol class="how">
+        <li>Installe l'app gratuite <b>ntfy</b> (App Store) et abonne-toi au sujet ci-dessous (bouton « + »).</li>
+        <li>Sur GitHub : dépôt → <i>Settings → Secrets and variables → Actions → New repository secret</i>,
+          nom <code>NTFY_TOPIC</code>, valeur = ce même sujet.</li>
+        <li>Après chaque changement de séances : copie la configuration ci-dessous et colle-la dans la variable
+          <code>SEANCES</code> (même page GitHub, onglet <i>Variables</i> → <i>New repository variable</i> la première fois,
+          puis le crayon pour la modifier). Elle reste privée : tes horaires et lieux ne sont pas publiés dans le dépôt.</li>
+      </ol>
+      <label class="topic">Sujet ntfy (secret, à garder pour toi ; modifiable pour reprendre celui d'un autre appareil) <input id="s-topic" autocomplete="off"></label>
+      <textarea id="s-json" readonly rows="6"></textarea>
+      <div class="acts"><button class="wide" id="s-copy">Copier la configuration</button></div>
+      <p class="note">GitHub vérifie les séances toutes les heures et envoie le résumé la veille, à l'heure choisie
+        (avec quelques minutes de retard possibles). Les séances restent aussi enregistrées dans ce navigateur.</p>
+    </details>
+  </div>
+  <div id="v-trajet" hidden>
+    <div class="card">
+      <h3>Trajet</h3>
+      <div class="frm">
+        <label>Départ de <span class="pick" id="tf-a"></span></label>
+        <label>Arrivée à <span class="pick" id="tf-b"></span></label>
+        <label>Jour <select id="tf-jour"></select></label>
+        <label>Heure de départ <input id="tf-dep" type="time" value="15:00" step="900"></label>
+        <label>Heure d'arrivée <input id="tf-arr" type="time" value="18:00" step="900"></label>
+        <label class="chk"><input type="checkbox" id="tf-ret"> Retour prévu</label>
+        <label class="ret">Jour du retour <select id="tf-rjour"></select></label>
+        <label class="ret">Départ du retour <input id="tf-rdep" type="time" value="17:00" step="900"></label>
+        <label class="ret">Arrivée du retour <input id="tf-rarr" type="time" value="20:00" step="900"></label>
+      </div>
+      <div class="acts"><button class="wide" id="tf-ok">Voir le temps</button></div>
+      <p class="err" id="tf-err"></p>
+    </div>
+    <div id="t-res"></div>
+  </div>
+</section>
+<footer id="foot">Cartes reconstruites à partir des données ouvertes : NOAA (GFS et AIGFS, domaine public) ·
   ECMWF (IFS et AIFS, CC BY 4.0) · fonds de carte Natural Earth. En haut les modèles physiques, en bas leurs versions IA. Grêle : indice de risque estimé, pas une prévision.</footer>
 <script>
 {
@@ -70,6 +197,7 @@ const ORDER = ["gfs", "ifs", "aigfs", "aifs"];   // GFS | IFS en haut, leurs IA 
 const PRODUCTS = [
   { id:"z500", label:"Z500 & pression", title:"Géopotentiel 500 hPa & pression au sol", url:"manifest.json", prefix:"" },
   { id:"precip", label:"Précipitations", title:"Précipitations sur 6 h & type (France)", url:"precip/manifest.json", prefix:"precip/" },
+  { id:"point", label:"Prévisions", title:"Prévisions pour un lieu · J+0 → J+6", url:null },
 ];
 const fmtDay = new Intl.DateTimeFormat("fr-FR", { weekday:"long", day:"numeric", month:"long", timeZone:"Europe/Paris" });
 const fmtHour = new Intl.DateTimeFormat("fr-FR", { hour:"2-digit", minute:"2-digit", timeZone:"Europe/Paris" });
@@ -107,6 +235,19 @@ function show(i) {
 }
 
 function useProduct(id) {
+  const isPoint = id === "point";
+  document.querySelector(".ctrl").classList.toggle("pm", isPoint);
+  document.getElementById("grid").hidden = isPoint;
+  document.getElementById("point").hidden = !isPoint;
+  document.getElementById("foot").hidden = isPoint;
+  if (isPoint) {
+    if (timer) togglePlay();
+    document.querySelectorAll("#prod button").forEach(b => b.classList.toggle("on", b.dataset.p === id));
+    document.getElementById("title").textContent = PRODUCTS.find(x => x.id === id).title;
+    document.getElementById("meta").textContent = "AROME (Météo-France) à J+0 et J+1, ECMWF IFS jusqu'à J+6";
+    initPoint();
+    return;
+  }
   const keep = offsets.length ? offsets[idx] : null;
   P = PRODUCTS.find(x => x.id === id); M = DATA[id]; offsets = M.offsets;
   document.querySelectorAll("#prod button").forEach(b => b.classList.toggle("on", b.dataset.p === id));
@@ -130,11 +271,11 @@ function togglePlay() {
   b.textContent = "❚❚";
 }
 
-Promise.all(PRODUCTS.map(p => fetch(p.url, { cache:"no-store" }).then(r => r.ok ? r.json() : null).catch(() => null)))
+Promise.all(PRODUCTS.map(p => !p.url ? Promise.resolve({}) : fetch(p.url, { cache:"no-store" }).then(r => r.ok ? r.json() : null).catch(() => null)))
 .then(list => {
   list.forEach((d, i) => { if (d) DATA[PRODUCTS[i].id] = d; });
   const avail = PRODUCTS.filter(p => DATA[p.id]);
-  if (!avail.length) throw new Error();
+  if (avail.length < 2) throw new Error();
   ORDER.forEach(key => { const f = document.createElement("figure"); f.id = "f-" + key; document.getElementById("grid").appendChild(f); });
   document.getElementById("prod").innerHTML = avail.length > 1
     ? avail.map(p => `<button data-p="${p.id}">${p.label}</button>`).join("") : "";
@@ -144,12 +285,478 @@ Promise.all(PRODUCTS.map(p => fetch(p.url, { cache:"no-store" }).then(r => r.ok 
   document.getElementById("next").onclick = () => show(idx + 1);
   document.getElementById("play").onclick = togglePlay;
   document.addEventListener("keydown", e => {
+    if (!document.getElementById("point").hidden) return;
     if (e.key === "ArrowLeft") show(idx - 1);
     if (e.key === "ArrowRight") show(idx + 1);
     if (e.key === " ") { e.preventDefault(); togglePlay(); }
   });
-  useProduct(avail[0].id);
-}).catch(() => { document.getElementById("meta").textContent = "manifest.json introuvable"; });
+  useProduct(["#prevision", "#seances", "#trajet"].includes(location.hash) ? "point" : avail[0].id);
+}).catch(() => {
+  document.getElementById("meta").textContent = "manifest.json introuvable — onglet Prévisions seul";
+  document.getElementById("prod").innerHTML = "";
+  useProduct("point");
+});
+
+/* ---------- Onglet « Prévisions » : un lieu, AROME heure par heure à J+0/J+1, puis ECMWF IFS jusqu'à J+6 ---------- */
+const PT = {};
+const C = {   // couleurs reprises des cartes (palette Z500 et types de précipitations)
+  sun:"#f7b733", ray:"#f2762e", moon:"#3b2fbf", cloud:"#e8eaee", cloudDark:"#a9afb8", edge:"#6b6b6b",
+  rain:"#429ee8", rainHeavy:"#1f72d0", snow:"#9567ef", ice:"#ef4ea6", bolt:"#e3202f", fog:"#9aa3ad",
+};
+const sunG = (cx, cy, r) => {
+  let rays = "";
+  for (let k = 0; k < 8; k++) {
+    const a = k * Math.PI / 4, c = Math.cos(a), s = Math.sin(a);
+    rays += `<line x1="${(cx + c * (r + 2.5)).toFixed(1)}" y1="${(cy + s * (r + 2.5)).toFixed(1)}" x2="${(cx + c * (r + 5.5)).toFixed(1)}" y2="${(cy + s * (r + 5.5)).toFixed(1)}"/>`;
+  }
+  return `<g stroke="${C.ray}" stroke-width="2" stroke-linecap="round">${rays}</g><circle cx="${cx}" cy="${cy}" r="${r}" fill="${C.sun}" stroke="${C.ray}" stroke-width="1.2"/>`;
+};
+const moonG = (cx, cy, r) => `<path d="M${cx + r * 0.35} ${cy - r} a${r} ${r} 0 1 0 ${r * 0.65} ${r * 1.55} a${r * 0.8} ${r * 0.8} 0 0 1 -${r * 0.65} -${r * 1.55}z" fill="${C.moon}" opacity=".85"/>`;
+const cloudG = (dark, dy = 0) => `<path d="M8 ${23 + dy} h16 a5 5 0 0 0 0.5 -10 a7.5 7.5 0 0 0 -14.3 -1.6 a5.6 5.6 0 0 0 -2.2 11.6z" fill="${dark ? C.cloudDark : C.cloud}" stroke="${C.edge}" stroke-width="1.1" stroke-linejoin="round"/>`;
+const drops = (n, col) => [10, 16, 22].slice(0, n).map((x, i) => `<line x1="${x + 1}" y1="${25 + (i % 2)}" x2="${x - 1}" y2="${30 + (i % 2)}" stroke="${col}" stroke-width="2.2" stroke-linecap="round"/>`).join("");
+const flakes = (n, col) => [[16], [11, 21], [9, 16, 23]][n - 1].map((x, i) => { const y = 27.5 + (i % 2) * 1.5; return `<g stroke="${col}" stroke-width="1.8" stroke-linecap="round"><line x1="${x - 3.2}" y1="${y}" x2="${x + 3.2}" y2="${y}"/><line x1="${x - 1.6}" y1="${y - 2.8}" x2="${x + 1.6}" y2="${y + 2.8}"/><line x1="${x + 1.6}" y1="${y - 2.8}" x2="${x - 1.6}" y2="${y + 2.8}"/></g>`; }).join("");
+const dots = (n, col) => [[11, 26], [17, 28], [23, 26], [14, 30.5], [20, 30.5]].slice(0, n).map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="${col}"/>`).join("");
+const boltG = `<path d="M17 20 l-4 6 h3.5 l-2.5 6 l7 -8 h-3.6 l2.6 -4z" fill="${C.bolt}" stroke="#74063a" stroke-width=".6" stroke-linejoin="round"/>`;
+const hailG = [11, 21].map(x => `<circle cx="${x}" cy="29" r="1.7" fill="#fff" stroke="${C.edge}" stroke-width="1"/>`).join("");
+const fogG = [17, 21, 25].map((y, i) => `<line x1="${5 + i * 2}" y1="${y}" x2="${27 - (i % 2) * 3}" y2="${y}" stroke="${C.fog}" stroke-width="2.2" stroke-linecap="round"/>`).join("");
+
+/* Code temps WMO (fourni par Open-Meteo pour AROME et IFS) → icône et libellé */
+function wx(code, day) {
+  const body = (b) => `<svg class="wx" viewBox="0 0 32 32" aria-hidden="true">${b}</svg>`;
+  const lit = (sz) => day ? sunG(sz ? 12 : 11, sz ? 12 : 10, sz ? 6 : 4.5) : moonG(sz ? 13 : 11, sz ? 12 : 9, sz ? 7 : 5);
+  const cl = (dark) => cloudG(dark, -3);
+  const T = {
+    0: [day ? "Ensoleillé" : "Nuit claire", lit(true)],
+    1: ["Peu nuageux", lit(true) + `<g transform="translate(5 6) scale(.75)">${cloudG(false)}</g>`],
+    2: ["Éclaircies", lit(false) + cloudG(false)],
+    3: ["Couvert", `<g transform="translate(-3 -4) scale(.8)">${cloudG(true)}</g>` + cloudG(false)],
+    45: ["Brouillard", `<g transform="translate(0 -6)">${cloudG(false)}</g>` + fogG],
+    48: ["Brouillard givrant", `<g transform="translate(0 -6)">${cloudG(false)}</g>` + fogG.replaceAll(C.fog, C.ice)],
+    51: ["Bruine faible", cl(false) + dots(2, C.rain)], 53: ["Bruine", cl(false) + dots(3, C.rain)],
+    55: ["Bruine forte", cl(true) + dots(5, C.rain)],
+    56: ["Bruine verglaçante", cl(false) + dots(3, C.ice)], 57: ["Bruine verglaçante forte", cl(true) + dots(5, C.ice)],
+    61: ["Pluie faible", cl(false) + drops(1, C.rain)], 63: ["Pluie", cl(true) + drops(2, C.rain)],
+    65: ["Pluie forte", cl(true) + drops(3, C.rainHeavy)],
+    66: ["Pluie verglaçante", cl(true) + drops(2, C.ice)], 67: ["Pluie verglaçante forte", cl(true) + drops(3, C.ice)],
+    71: ["Neige faible", cl(false) + flakes(1, C.snow)], 73: ["Neige", cl(true) + flakes(2, C.snow)],
+    75: ["Neige forte", cl(true) + flakes(3, C.snow)], 77: ["Grains de neige", cl(false) + flakes(2, C.snow)],
+    80: ["Averses faibles", lit(false) + cl(false) + drops(1, C.rain)],
+    81: ["Averses", lit(false) + cl(true) + drops(2, C.rain)], 82: ["Fortes averses", cl(true) + drops(3, C.rainHeavy)],
+    85: ["Averses de neige", lit(false) + cl(false) + flakes(2, C.snow)], 86: ["Fortes averses de neige", cl(true) + flakes(3, C.snow)],
+    95: ["Orage", cl(true) + boltG + drops(1, C.rain).replace('x1="11"', 'x1="25"').replace('x2="9"', 'x2="23"')],
+    96: ["Orage avec grêle", cl(true) + boltG + hailG], 99: ["Orage, forte grêle", cl(true) + boltG + hailG],
+  };
+  const [label, g] = T[code] || T[Object.keys(T).map(Number).filter(k => k <= code).pop() || 0];
+  return { label, svg: body(g).replace("<svg", `<svg role="img" aria-label="${label}"`).replace('aria-hidden="true"', "") };
+}
+const SEV = c => ({ 95: 100, 96: 101, 99: 102 })[c] || c;   // gravité pour résumer une période
+
+/* Couleurs des cases : cumul (teintes « pluie » des cartes) et température (palette Z500) */
+const BINS = [0.2, 1, 2, 5, 10, 20];
+const PAL = {   // mêmes teintes que les cartes de précipitations, selon le type
+  pluie: ["#bfe4ff", "#80c6f6", "#429ee8", "#1f72d0", "#184ca6", "#11306f"],
+  orage: ["#ffd6d0", "#ff9d8f", "#ff5c4d", "#e3202f", "#b10f3c", "#74063a"],
+  neige: ["#f0e8ff", "#d8c4ff", "#b996ff", "#9567ef", "#6f40cf", "#4a2597"],
+  verglas: ["#ffe3f2", "#ffb6dc", "#ff82c3", "#ef4ea6", "#c62b86", "#8c1562"],
+};
+const kind = c => c >= 95 || (c >= 80 && c <= 82) ? "orage"      // « orage / averses », comme sur les cartes
+  : (c >= 71 && c <= 77) || c === 85 || c === 86 ? "neige" : [56, 57, 66, 67].includes(c) ? "verglas" : "pluie";
+const TEMPC = ["#3b2fbf", "#1f62d6", "#1e9be0", "#25c7d9", "#3fd18b", "#8fdc3a", "#e6e22e", "#f7b733", "#f2762e", "#e0412c", "#b81f2a"];
+const mmCell = (v, code) => {
+  if (v == null) return "–";
+  if (v < 0.1) return `<span class="mm mm0">0</span>`;
+  const pal = PAL[kind(code)], k = BINS.filter(b => v >= b).length - 1;
+  const txt = v < 10 ? v.toFixed(1).replace(".", ",") : Math.round(v);
+  return k < 0 ? `<span class="mm">${txt}</span>`
+    : `<span class="mm" style="background:${pal[k]};color:${k >= 3 ? "#fff" : pal[5]}">${txt}</span>`;
+};
+const tCol = t => TEMPC[Math.max(0, Math.min(TEMPC.length - 1, Math.floor((t + 10) / 4)))];
+const gust = g => g == null ? "–" : `<span class="${g >= 80 ? "g80" : g >= 60 ? "g60" : ""}">${Math.round(g)}</span>`;
+const ymd = new Intl.DateTimeFormat("en-CA", { timeZone:"Europe/Paris" });
+const hh = new Intl.DateTimeFormat("fr-FR", { hour:"2-digit", timeZone:"Europe/Paris" });
+const H = d => hh.format(d).replace(/\s?h?$/, "") + "h";
+
+function saveLoc(p) { try { localStorage.setItem("veille-point", JSON.stringify(p)); } catch (e) {} }
+function loadLoc() { try { return JSON.parse(localStorage.getItem("veille-point")); } catch (e) { return null; } }
+
+async function forecast(p) {
+  PT.place = p; saveLoc(p);
+  document.getElementById("phits").innerHTML = "";
+  document.getElementById("pplace").innerHTML = `<b>${p.name}</b><span>${p.admin || ""} · ${p.lat.toFixed(2)}° N, ${p.lon.toFixed(2)}° E</span>`;
+  document.getElementById("pdays").innerHTML = `<p class="note">Chargement des prévisions…</p>`;
+  const vars = "weather_code,temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m,is_day";
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}&hourly=${vars}` +
+    `&models=meteofrance_arome_france,ecmwf_ifs025&timezone=GMT&timeformat=unixtime&forecast_days=8&wind_speed_unit=kmh`;
+  try {
+    const d = await fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+    render(d);
+  } catch (e) {
+    document.getElementById("pdays").innerHTML = `<p class="note">Prévisions indisponibles pour le moment (${e.message}).</p>`;
+  }
+}
+
+function render(d) {
+  const h = d.hourly, n = h.time.length;
+  const get = (v, m, i) => h[`${v}_${m}`] ? h[`${v}_${m}`][i] : null;
+  const now = Date.now(), today = ymd.format(new Date());
+  const dayIdx = s => Math.round((new Date(s) - new Date(today)) / 864e5);
+  const rows = {};   // jour (AAAA-MM-JJ, heure de Paris) → lignes
+  let aromeMissing = false;
+  // J+0 et J+1 : AROME, heure par heure (IFS en secours hors du domaine AROME)
+  for (let i = 0; i < n; i++) {
+    const t = new Date(h.time[i] * 1000), day = ymd.format(t), j = dayIdx(day);
+    if (j > 1 || t < now - 3600e3) continue;
+    let m = "meteofrance_arome_france";
+    if (get("temperature_2m", m, i) == null) { m = "ecmwf_ifs025"; aromeMissing = true; }
+    if (get("temperature_2m", m, i) == null) continue;
+    (rows[day] ||= []).push({ t, end: t, label: H(t), code: get("weather_code", m, i), isDay: get("is_day", m, i),
+      temp: get("temperature_2m", m, i), mm: get("precipitation", m, i), wind: get("wind_speed_10m", m, i),
+      gust: get("wind_gusts_10m", m, i), src: m });
+  }
+  // J+2 à J+6 : ECMWF IFS par blocs de 3 h (chaque valeur horaire = cumul de l'heure écoulée)
+  const m = "ecmwf_ifs025", blocks = new Map();
+  for (let i = 0; i < n; i++) {
+    const t = new Date(h.time[i] * 1000);
+    if (get("temperature_2m", m, i) == null) continue;
+    const k = Math.floor((t.getUTCHours() + 23) % 24 / 3), start = new Date(t - 3600e3);
+    const key = ymd.format(new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()) - (t.getUTCHours() === 0 ? 864e5 : 0))) + "|" + k;
+    const b = blocks.get(key) || { start, idx: [] };
+    b.idx.push(i); blocks.set(key, b);
+  }
+  for (const b of blocks.values()) {
+    const last = b.idx[b.idx.length - 1], end = new Date(h.time[last] * 1000), day = ymd.format(b.start), j = dayIdx(day);
+    if (j < 2 || j > 6) continue;
+    const vals = v => b.idx.map(i => get(v, m, i)).filter(x => x != null);
+    const codes = vals("weather_code"), mid = b.idx[Math.floor(b.idx.length / 2)];
+    (rows[day] ||= []).push({ t: b.start, end, label: `${H(b.start)} – ${H(end)}`,
+      code: codes.reduce((a, c) => SEV(c) > SEV(a) ? c : a, 0), isDay: get("is_day", m, mid),
+      temp: get("temperature_2m", m, last), mm: vals("precipitation").reduce((a, x) => a + x, 0),
+      wind: vals("wind_speed_10m").reduce((a, x) => a + x, 0) / Math.max(1, vals("wind_speed_10m").length),
+      gust: Math.max(...vals("wind_gusts_10m")), src: m });
+  }
+  const fmtW = new Intl.DateTimeFormat("fr-FR", { weekday:"long", timeZone:"Europe/Paris" });
+  const fmtS = new Intl.DateTimeFormat("fr-FR", { weekday:"short", day:"numeric", month:"short", timeZone:"Europe/Paris" });
+  const html = Object.keys(rows).sort().map(day => {
+    const R = rows[day].sort((a, b) => a.t - b.t), j = dayIdx(day);
+    const temps = R.map(r => r.temp), gusts = R.map(r => r.gust).filter(x => x != null);
+    const daytime = R.filter(r => r.isDay); const pool = daytime.length ? daytime : R;
+    const main = pool.reduce((a, r) => SEV(r.code) > SEV(a) ? r.code : a, 0);
+    const tot = R.reduce((a, r) => a + (r.mm || 0), 0);
+    const ar = R.some(r => r.src.startsWith("meteo"));
+    const src = ar ? "AROME, horaire" : "ECMWF IFS, par 3 h";
+    const w = wx(main, true);
+    const lines = R.map(r => { const x = wx(r.code, r.isDay); return `<tr><td>${r.label}</td><td class="ic" title="${x.label}">${x.svg}</td>
+      <td><span class="t" style="color:${tCol(r.temp)}">${Math.round(r.temp)}°</span></td><td>${mmCell(r.mm, r.code)}</td>
+      <td>${r.wind == null ? "–" : Math.round(r.wind)}</td><td>${gust(r.gust)}</td></tr>`; }).join("");
+    const noon = new Date(day + "T12:00:00Z");
+    return `<details class="day"${j <= 1 ? " open" : ""}><summary><span title="${w.label}">${w.svg}</span>
+      <span><span class="dname">${j === 0 ? "Aujourd'hui" : j === 1 ? "Demain" : fmtW.format(noon)}</span>
+      <span class="dsrc"> · ${fmtS.format(noon)} · J+${j}</span><br><small class="dsrc">${w.label} · ${src}</small></span>
+      <span class="dstat"><span style="color:${tCol(Math.min(...temps))}">${Math.round(Math.min(...temps))}°</span> / <b style="color:${tCol(Math.max(...temps))}">${Math.round(Math.max(...temps))}°</b><br>
+      <small>${tot >= 0.1 ? (tot < 10 ? tot.toFixed(1).replace(".", ",") : Math.round(tot)) + " mm" : "sec"}${gusts.length ? " · rafales " + Math.round(Math.max(...gusts)) : ""}</small></span></summary>
+      <table class="h"><tr><th>${ar ? "Heure" : "Période"}</th><th class="ic">Temps</th><th>Temp.</th><th>mm</th><th>Vent</th><th>Rafales</th></tr>${lines}</table></details>`;
+  }).join("");
+  document.getElementById("pdays").innerHTML = html || `<p class="note">Aucune donnée pour ce lieu.</p>`;
+  document.getElementById("pnote").innerHTML =
+    (aromeMissing ? "Lieu hors du domaine AROME (ou échéance non couverte) : ECMWF IFS utilisé à la place pour J+0 et J+1. " : "") +
+    "J+0 et J+1 : AROME (Météo-France, 2,5 km), heure par heure — pluie tombée dans l'heure écoulée. " +
+    "J+2 à J+6 : ECMWF IFS (0,25°), par blocs de 3 h (au-delà de +144 h, données à pas de 6 h) — " +
+    "température en fin de bloc, temps le plus marquant, cumul du bloc, vent moyen, rafale maximale. " +
+    "Vent et rafales en km/h (orange ≥ 60, rouge ≥ 80) ; couleur du cumul selon le type, comme sur les cartes. " +
+    `Données : <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a> (CC BY 4.0), modèles Météo-France et ECMWF.`;
+}
+
+async function searchPlace(q) {
+  const box = document.getElementById("phits");
+  box.innerHTML = `<p class="note">Recherche…</p>`;
+  try {
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=fr&format=json`).then(r => r.json());
+    const res = r.results || [];
+    if (!res.length) { box.innerHTML = `<p class="note">Aucun lieu trouvé.</p>`; return; }
+    box.innerHTML = res.map((x, i) => `<button type="button" data-i="${i}">${x.name} <span class="sub">— ${[x.admin2, x.admin1, x.country].filter(Boolean).join(", ")}</span></button>`).join("");
+    box.querySelectorAll("button").forEach(b => b.onclick = () => {
+      const x = res[+b.dataset.i];
+      forecast({ name: x.name, admin: [x.admin2 || x.admin1, x.country_code].filter(Boolean).join(", "), lat: x.latitude, lon: x.longitude });
+    });
+  } catch (e) { box.innerHTML = `<p class="note">Recherche impossible pour le moment.</p>`; }
+}
+
+function initPoint() {
+  if (PT.ready) return; PT.ready = true;
+  document.getElementById("psearch").onsubmit = e => { e.preventDefault(); const q = document.getElementById("pq").value.trim(); if (q) searchPlace(q); };
+  document.getElementById("pgeo").onclick = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      pos => forecast({ name: "Ma position", admin: "", lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      () => { document.getElementById("phits").innerHTML = `<p class="note">Position refusée ou indisponible.</p>`; });
+  };
+  forecast(loadLoc() || { name: "Paris", admin: "Paris, FR", lat: 48.8566, lon: 2.3522 });
+  const views = ["lieu", "seances", "trajet"], ready = {};
+  const view = v => {
+    views.forEach(x => document.getElementById("v-" + x).hidden = x !== v);
+    document.querySelectorAll("#psub button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+    if (!ready[v]) { ready[v] = true; if (v === "seances") initSessions(); if (v === "trajet") initTrip(); }
+    else if (v === "seances") renderSessions();
+    store.set("veille-vue", v);
+  };
+  document.querySelectorAll("#psub button").forEach(b => b.onclick = () => view(b.dataset.v));
+  view(location.hash === "#seances" ? "seances" : location.hash === "#trajet" ? "trajet" : store.get("veille-vue", "lieu"));
+}
+
+/* ---------- Outils communs : heure de Paris, prévisions horaires, résumé d'une période ---------- */
+const parisOff = t => {
+  const v = new Intl.DateTimeFormat("en-US", { timeZone:"Europe/Paris", timeZoneName:"shortOffset" })
+    .formatToParts(new Date(t)).find(p => p.type === "timeZoneName").value;
+  const m = v.match(/GMT([+-]\d+)(?::(\d+))?/);
+  return m ? (+m[1]) * 60 + Math.sign(+m[1]) * (+(m[2] || 0)) : 0;
+};
+const parisTs = (day, hhmm) => {      // "2026-11-16", "06:00" (heure de Paris) → horodatage
+  const [y, mo, d] = day.split("-").map(Number), [h, mi] = hhmm.split(":").map(Number);
+  const t0 = Date.UTC(y, mo - 1, d, h, mi);
+  return t0 - parisOff(t0 - parisOff(t0) * 6e4) * 6e4;
+};
+const addDays = (day, n) => ymd.format(new Date(parisTs(day, "12:00") + n * 864e5));
+const isoWd = day => (new Date(day + "T12:00:00Z").getUTCDay() + 6) % 7 + 1;   // 1 = lundi … 7 = dimanche
+const JOURS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."];
+const fmtLong = new Intl.DateTimeFormat("fr-FR", { weekday:"long", day:"numeric", month:"long", timeZone:"Europe/Paris" });
+const fmtShort = new Intl.DateTimeFormat("fr-FR", { weekday:"short", day:"numeric", month:"short", timeZone:"Europe/Paris" });
+const hm = t => { const [h, m] = new Intl.DateTimeFormat("fr-FR", { hour:"2-digit", minute:"2-digit", timeZone:"Europe/Paris" }).format(t).split(":"); return `${h}h${m === "00" ? "" : m}`; };
+const num = (v, d = 1) => v < 10 && d ? v.toFixed(d).replace(".", ",") : String(Math.round(v));
+const store = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } },
+                set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+
+const HC = new Map();
+async function hourly(lat, lon) {                     // AROME quand il couvre l'heure, sinon ECMWF IFS
+  const k = `${lat.toFixed(3)},${lon.toFixed(3)}`, c = HC.get(k);
+  if (c && Date.now() - c.at < 15 * 60e3) return c.rows;
+  const vars = "weather_code,temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m,is_day";
+  const d = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${vars}` +
+    `&models=meteofrance_arome_france,ecmwf_ifs025&timezone=GMT&timeformat=unixtime&forecast_days=8&wind_speed_unit=kmh`)
+    .then(r => { if (!r.ok) throw new Error("API " + r.status); return r.json(); });
+  const h = d.hourly, g = (v, m, i) => h[`${v}_${m}`] ? h[`${v}_${m}`][i] : null;
+  const rows = h.time.map((ts, i) => {
+    let m = "meteofrance_arome_france";
+    if (g("temperature_2m", m, i) == null) m = "ecmwf_ifs025";
+    if (g("temperature_2m", m, i) == null) return null;
+    return { t: ts * 1000, code: g("weather_code", m, i), temp: g("temperature_2m", m, i), mm: g("precipitation", m, i) || 0,
+             wind: g("wind_speed_10m", m, i), gust: g("wind_gusts_10m", m, i), isDay: g("is_day", m, i), src: m };
+  }).filter(Boolean);
+  HC.set(k, { at: Date.now(), rows });
+  return rows;
+}
+
+/* Résumé du temps entre t0 et t1 (mêmes règles que le script des notifications, meteo/sport/notif_sport.py) */
+function summarize(rows, t0, t1) {
+  const R = rows.filter(r => r.t >= t0 - 1800e3 && r.t <= t1 + 1800e3);
+  if (!R.length) return null;
+  const P = rows.filter(r => r.t > t0 && r.t <= Math.max(t1, t0 + 3600e3));   // pluie : cumul de l'heure écoulée
+  const first = R[0], last = R[R.length - 1];
+  const worst = R.reduce((a, r) => SEV(r.code) > SEV(a.code) ? r : a, R[0]);
+  const seq = [];
+  for (const r of [first, worst, last]) { const l = wx(r.code, r.isDay).label; if (!seq.includes(l)) seq.push(l); }
+  const tmin = Math.min(...R.map(r => r.temp)), tmax = Math.max(...R.map(r => r.temp));
+  const mm = P.reduce((a, r) => a + r.mm, 0);
+  const winds = R.map(r => r.wind).filter(x => x != null), gusts = R.map(r => r.gust).filter(x => x != null);
+  const wind = winds.length ? winds.reduce((a, x) => a + x, 0) / winds.length : null;
+  const gust = gusts.length ? Math.max(...gusts) : null;
+  const k = kind(worst.code), alerts = [];
+  if (worst.code >= 95) alerts.push("⚡ orage possible");
+  if (k === "neige") alerts.push("❄️ neige");
+  if (k === "verglas" || (tmin <= 0.5 && mm >= 0.1 && k !== "neige")) alerts.push("🧊 risque de verglas");
+  else if (tmin <= 0) alerts.push("🥶 gel");
+  if (gust != null && gust >= 60) alerts.push(`💨 rafales ${Math.round(gust)} km/h`);
+  if (mm >= 5) alerts.push(`🌧️ ${num(mm)} mm`);
+  const tTxt = Math.round(first.temp) === Math.round(last.temp) ? `${Math.round(first.temp)} °C`
+    : `${Math.round(first.temp)} → ${Math.round(last.temp)} °C`;
+  const text = [seq.map((l, i) => i ? l.toLowerCase() : l).join(" puis "), tTxt, mm >= 0.1 ? `${num(mm)} mm` : "sec",
+    wind != null ? `vent ${Math.round(wind)} km/h, rafales ${Math.round(gust)}` : ""].filter(Boolean).join(" · ");
+  const arome = R.every(r => r.src.startsWith("meteo")) ? "AROME" : R.some(r => r.src.startsWith("meteo")) ? "AROME + IFS" : "ECMWF IFS";
+  return { worst, first, last, tmin, tmax, mm, wind, gust, alerts, text, src: arome };
+}
+
+/* Choix d'un lieu (recherche Open-Meteo) */
+async function geocode(q) {
+  const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=fr&format=json`).then(r => r.json());
+  return (r.results || []).map(x => ({ name: x.name, admin: [x.admin2 || x.admin1, x.country_code].filter(Boolean).join(", "),
+    lat: +x.latitude.toFixed(4), lon: +x.longitude.toFixed(4), full: [x.admin2, x.admin1, x.country].filter(Boolean).join(", ") }));
+}
+function picker(el, initial, onChange) {
+  el.innerHTML = `<span class="pv"><input type="search" placeholder="Ville ou commune" autocomplete="off"><button type="button">Chercher</button></span>
+    <div class="hits"></div><div class="chosen"></div>`;
+  const inp = el.querySelector("input"), hits = el.querySelector(".hits"), ch = el.querySelector(".chosen");
+  const set = p => { el.place = p || null; ch.textContent = p ? `✓ ${p.name}${p.admin ? " (" + p.admin + ")" : ""}` : ""; hits.innerHTML = "";
+    inp.value = p ? p.name : ""; if (onChange) onChange(p); };
+  const go = async () => {
+    const q = inp.value.trim(); if (!q) return;
+    hits.innerHTML = `<p class="note">Recherche…</p>`;
+    try {
+      const res = await geocode(q);
+      hits.innerHTML = res.length ? res.map((x, i) => `<button type="button" data-i="${i}">${x.name} <span class="sub">— ${x.full}</span></button>`).join("")
+        : `<p class="note">Aucun lieu trouvé.</p>`;
+      hits.querySelectorAll("button").forEach(b => b.onclick = () => set(res[+b.dataset.i]));
+    } catch (e) { hits.innerHTML = `<p class="note">Recherche impossible pour le moment.</p>`; }
+  };
+  el.querySelector(".pv button").onclick = go;
+  inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); go(); } };
+  set(initial);
+  return { get: () => el.place, set };
+}
+
+/* ---------- Séances régulières ---------- */
+const S = { list: store.get("veille-seances", []), edit: null, jours: new Set() };
+function topic() {
+  let t = store.get("veille-ntfy", null);
+  if (!t) {
+    const a = new Uint8Array(9); crypto.getRandomValues(a);
+    t = "veille-" + Array.from(a, b => "abcdefghijkmnpqrstuvwxyz23456789"[b % 32]).join("");
+    store.set("veille-ntfy", t);
+  }
+  return t;
+}
+function nextOcc(s, from = Date.now()) {
+  const today = ymd.format(new Date(from));
+  for (let n = 0; n <= 7; n++) {
+    const day = addDays(today, n);
+    if (!s.jours.includes(isoWd(day))) continue;
+    const t0 = parisTs(day, s.depart);
+    if (t0 + s.duree_min * 60e3 > from) return { day, t0, t1: t0 + s.duree_min * 60e3 };
+  }
+  return null;
+}
+function exportJson() {
+  const data = { version: 1, seances: S.list.map(s => ({ nom: s.nom, lieu: s.lieu.name, lat: +s.lieu.lat.toFixed(3), lon: +s.lieu.lon.toFixed(3),
+    jours: s.jours, depart: s.depart, duree_min: s.duree_min, notif_veille: s.notif_veille })) };
+  document.getElementById("s-json").value = JSON.stringify(data, null, 1);
+  document.getElementById("s-topic").value = topic();
+}
+function fillForm(s) {
+  S.edit = s ? s.id : null;
+  document.getElementById("sf-title").textContent = s ? "Modifier la séance" : "Ajouter une séance régulière";
+  document.getElementById("sf-cancel").hidden = !s;
+  document.getElementById("sf-nom").value = s ? s.nom : "";
+  S.pick.set(s ? s.lieu : (PT.place || null));
+  S.jours = new Set(s ? s.jours : []);
+  document.querySelectorAll("#sf-jours button").forEach(b => b.classList.toggle("on", S.jours.has(+b.dataset.j)));
+  document.getElementById("sf-dep").value = s ? s.depart : "06:00";
+  document.getElementById("sf-duree").value = s ? s.duree_min : 120;
+  document.getElementById("sf-notif").value = s ? s.notif_veille : "20:00";
+  document.getElementById("sf-err").textContent = "";
+}
+function saveSession() {
+  const nom = document.getElementById("sf-nom").value.trim() || "Sport", lieu = S.pick.get(), err = document.getElementById("sf-err");
+  if (!lieu) { err.textContent = "Choisis un lieu (bouton Chercher puis un résultat)."; return; }
+  if (!S.jours.size) { err.textContent = "Choisis au moins un jour."; return; }
+  const s = { id: S.edit || Date.now().toString(36), nom, lieu, jours: [...S.jours].sort(), depart: document.getElementById("sf-dep").value || "06:00",
+              duree_min: +document.getElementById("sf-duree").value, notif_veille: document.getElementById("sf-notif").value };
+  const i = S.list.findIndex(x => x.id === s.id);
+  if (i >= 0) S.list[i] = s; else S.list.push(s);
+  store.set("veille-seances", S.list);
+  document.getElementById("s-topic").onchange = e => { const v = e.target.value.trim(); if (v) store.set("veille-ntfy", v); };
+  fillForm(null); renderSessions();
+}
+async function renderSessions() {
+  exportJson();
+  const box = document.getElementById("s-list");
+  if (!S.list.length) { box.innerHTML = `<p class="note">Aucune séance pour l'instant.</p>`; return; }
+  box.innerHTML = S.list.map(s => {
+    const o = nextOcc(s), fin = hm(parisTs("2026-01-05", s.depart) + s.duree_min * 60e3);
+    return `<div class="card sess" id="s-${s.id}"><span class="ic"></span><div>
+      <h4>${s.nom} · ${s.jours.map(j => JOURS[j - 1]).join(", ")} · ${hm(parisTs("2026-01-05", s.depart))} → ${fin}</h4>
+      <div class="sub">${s.lieu.name} · notification la veille à ${s.notif_veille.replace(":00", "h").replace(":", "h")}</div>
+      <div class="txt">${o ? "Prochaine : " + fmtLong.format(o.t0) + " — chargement…" : ""}</div><div class="alert"></div></div>
+      <div class="mini"><button data-e="${s.id}">Modifier</button><button data-d="${s.id}">Supprimer</button></div></div>`;
+  }).join("");
+  box.querySelectorAll("[data-e]").forEach(b => b.onclick = () => { fillForm(S.list.find(x => x.id === b.dataset.e)); window.scrollTo({ top: 0, behavior: "smooth" }); });
+  box.querySelectorAll("[data-d]").forEach(b => b.onclick = () => {
+    if (!confirm("Supprimer cette séance ?")) return;
+    S.list = S.list.filter(x => x.id !== b.dataset.d); store.set("veille-seances", S.list); renderSessions();
+  });
+  for (const s of S.list) {
+    const card = document.getElementById("s-" + s.id), o = nextOcc(s);
+    if (!o) continue;
+    try {
+      const sm = summarize(await hourly(s.lieu.lat, s.lieu.lon), o.t0, o.t1);
+      if (!sm) { card.querySelector(".txt").textContent = `Prochaine : ${fmtLong.format(o.t0)} — au-delà des prévisions disponibles.`; continue; }
+      card.querySelector(".ic").innerHTML = wx(sm.worst.code, sm.worst.isDay).svg;
+      card.querySelector(".txt").innerHTML = `<b>${fmtLong.format(o.t0)}</b>, ${hm(o.t0)} → ${hm(o.t1)} : ${sm.text} <span class="sub">(${sm.src})</span>`;
+      card.querySelector(".alert").textContent = sm.alerts.join(" · ");
+    } catch (e) { card.querySelector(".txt").textContent = `Prochaine : ${fmtLong.format(o.t0)} — prévisions indisponibles.`; }
+  }
+}
+function initSessions() {
+  document.getElementById("sf-jours").innerHTML = JOURS.map((j, i) => `<button type="button" data-j="${i + 1}">${j}</button>`).join("");
+  document.querySelectorAll("#sf-jours button").forEach(b => b.onclick = () => {
+    const j = +b.dataset.j; S.jours.has(j) ? S.jours.delete(j) : S.jours.add(j); b.classList.toggle("on", S.jours.has(j));
+  });
+  document.getElementById("sf-duree").innerHTML = [30, 45, 60, 90, 120, 150, 180, 240, 300]
+    .map(m => `<option value="${m}"${m === 120 ? " selected" : ""}>${m < 60 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) : "")}</option>`).join("");
+  document.getElementById("sf-notif").innerHTML = Array.from({ length: 18 }, (_, i) => i + 6)
+    .map(h => `<option value="${String(h).padStart(2, "0")}:00"${h === 20 ? " selected" : ""}>${h}h</option>`).join("");
+  S.pick = picker(document.getElementById("sf-lieu"), null);
+  document.getElementById("sf-ok").onclick = saveSession;
+  document.getElementById("sf-cancel").onclick = () => fillForm(null);
+  document.getElementById("s-copy").onclick = async () => {
+    const t = document.getElementById("s-json"); t.select();
+    try { await navigator.clipboard.writeText(t.value); } catch (e) { document.execCommand("copy"); }
+    document.getElementById("s-copy").textContent = "Copié ✓"; setTimeout(() => document.getElementById("s-copy").textContent = "Copier la configuration", 1500);
+  };
+  document.getElementById("s-topic").onchange = e => { const v = e.target.value.trim(); if (v) store.set("veille-ntfy", v); };
+  fillForm(null); renderSessions();
+}
+
+/* ---------- Trajet A → B (jusqu'à J+6) ---------- */
+const TR = store.get("veille-trajet", {});
+function dayOptions(sel) {
+  const today = ymd.format(new Date());
+  return Array.from({ length: 7 }, (_, n) => { const d = addDays(today, n);
+    return `<option value="${d}"${d === sel ? " selected" : ""}>${n === 0 ? "Aujourd'hui" : n === 1 ? "Demain" : fmtShort.format(parisTs(d, "12:00"))} (J+${n})</option>`; }).join("");
+}
+function stopHtml(title, place, t, sm) {
+  if (!sm) return `<div class="stop"><span></span><div><div class="k">${title} · ${place.name} · ${fmtShort.format(t)} ${hm(t)}</div>
+    <div class="v">Au-delà des prévisions disponibles (J+6).</div></div></div>`;
+  const w = wx(sm.worst.code, sm.worst.isDay);
+  return `<div class="stop">${w.svg}<div><div class="k">${title} · <b>${place.name}</b> · ${fmtShort.format(t)} à ${hm(t)} · ${sm.src}</div>
+    <div class="v">${sm.text}</div>
+    ${sm.alerts.length ? `<div class="alert" style="color:#e0412c;font-size:13px">${sm.alerts.join(" · ")}</div>` : ""}</div></div>`;
+}
+async function leg(label, A, B, day, dep, arr) {
+  const t0 = parisTs(day, dep); let t1 = parisTs(day, arr);
+  if (t1 <= t0) t1 += 864e5;                               // arrivée le lendemain
+  const [ra, rb] = await Promise.all([hourly(A.lat, A.lon), hourly(B.lat, B.lon)]);
+  // autour de l'heure : de 1 h avant à 1 h après (pluie de l'heure qui précède et qui suit)
+  return `<div class="card"><h3>${label} : ${A.name} → ${B.name}</h3><div class="leg">
+    ${stopHtml("Départ", A, t0, summarize(ra, t0 - 3600e3, t0 + 3600e3))}
+    ${stopHtml("Arrivée" + (ymd.format(t1) !== day ? " (lendemain)" : ""), B, t1, summarize(rb, t1 - 3600e3, t1 + 3600e3))}</div></div>`;
+}
+async function runTrip() {
+  const A = TR.pa.get(), B = TR.pb.get(), err = document.getElementById("tf-err"), out = document.getElementById("t-res");
+  err.textContent = "";
+  if (!A || !B) { err.textContent = "Choisis le lieu de départ et le lieu d'arrivée."; return; }
+  const v = id => document.getElementById(id).value;
+  const ret = document.getElementById("tf-ret").checked;
+  store.set("veille-trajet", { A, B, dep: v("tf-dep"), arr: v("tf-arr"), ret, rdep: v("tf-rdep"), rarr: v("tf-rarr") });
+  out.innerHTML = `<p class="note">Chargement…</p>`;
+  try {
+    let html = await leg("Aller", A, B, v("tf-jour"), v("tf-dep"), v("tf-arr"));
+    if (ret) {
+      if (v("tf-rjour") < v("tf-jour")) { err.textContent = "Le retour est avant l'aller."; }
+      html += await leg("Retour", B, A, v("tf-rjour"), v("tf-rdep"), v("tf-rarr"));
+    }
+    out.innerHTML = html + `<p class="note">Au départ et à l'arrivée : temps de l'heure précédente à l'heure suivante. AROME jusqu'à J+1 (heure par heure),
+      puis ECMWF IFS jusqu'à J+6. Données : Open-Meteo.com (CC BY 4.0), Météo-France et ECMWF.</p>`;
+  } catch (e) { out.innerHTML = `<p class="note">Prévisions indisponibles pour le moment (${e.message}).</p>`; }
+}
+function initTrip() {
+  TR.pa = picker(document.getElementById("tf-a"), TR.A || PT.place || null);
+  TR.pb = picker(document.getElementById("tf-b"), TR.B || null);
+  const today = ymd.format(new Date());
+  document.getElementById("tf-jour").innerHTML = dayOptions(today);
+  document.getElementById("tf-rjour").innerHTML = dayOptions(addDays(today, 1));
+  for (const k of ["dep", "arr", "rdep", "rarr"]) if (TR[k]) document.getElementById("tf-" + k).value = TR[k];
+  const r = document.getElementById("tf-ret"), sync = () => document.querySelectorAll("#v-trajet .ret").forEach(e => e.hidden = !r.checked);
+  r.checked = !!TR.ret; r.onchange = sync; sync();
+  document.getElementById("tf-ok").onclick = runTrip;
+}
 }
 </script>
 </body>

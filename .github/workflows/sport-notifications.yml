@@ -1,0 +1,32 @@
+name: Sport – notifications météo la veille
+
+on:
+  schedule:
+    - cron: "3 * * * *"        # toutes les heures (le script ne parle qu'à l'heure choisie pour chaque séance)
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Envoyer tout de suite le résumé de la prochaine séance (test)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  notifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: meteo/sport
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet requests
+      - name: Envoyer les notifications du jour
+        env:
+          SEANCES: ${{ vars.SEANCES }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python meteo/sport/notif_sport.py ${{ inputs.test && '--test' || '' }}

@@ -55,13 +55,55 @@ FRAME_POINTS = [(-5.2, 48.4),   # pointe de Bretagne
                 (9.6, 41.9),    # Corse
                 (-1.8, 43.3)]   # Pays basque
 FRAME_PAD = 0.10
-BINS = [0.2, 1, 2, 5, 10, 20, 50]         # mm en 6 h
-CLASSES = {  # code: (libellé, 6 teintes du plus faible au plus fort)
-    1: ("Pluie", ["#bfe4ff", "#80c6f6", "#429ee8", "#1f72d0", "#184ca6", "#11306f"]),
-    2: ("Orage / averses", ["#ffd6d0", "#ff9d8f", "#ff5c4d", "#e3202f", "#b10f3c", "#74063a"]),
-    3: ("Neige", ["#f0e8ff", "#d8c4ff", "#b996ff", "#9567ef", "#6f40cf", "#4a2597"]),
-    4: ("Verglas / grésil", ["#ffe3f2", "#ffb6dc", "#ff82c3", "#ef4ea6", "#c62b86", "#8c1562"]),
+BINS = [0.2, 1, 2, 5, 10, 20, 30, 50, 75, 100]   # mm en 6 h (au-delà de 100 : teinte la plus forte)
+CLASSES = {  # code: (libellé, 9 teintes du plus faible au plus fort)
+    1: ("Pluie", ["#bfe4ff", "#80c6f6", "#429ee8", "#1f72d0", "#184ca6", "#11306f", "#0b2152", "#06143a", "#030a22"]),
+    2: ("Orage / averses", ["#ffd6d0", "#ff9d8f", "#ff5c4d", "#e3202f", "#b10f3c", "#74063a", "#4f0329", "#33021b",
+                            "#1e0110"]),
+    3: ("Neige", ["#f0e8ff", "#d8c4ff", "#b996ff", "#9567ef", "#6f40cf", "#4a2597", "#36196f", "#25104f", "#160933"]),
+    4: ("Verglas / grésil", ["#ffe3f2", "#ffb6dc", "#ff82c3", "#ef4ea6", "#c62b86", "#8c1562", "#640e46", "#430930",
+                             "#28051c"]),
 }
+TICKS = [1, 5, 20, 50, 100]               # graduations des légendes par type
+SHOW_CITIES = True                        # chefs-lieux de département sur les cartes
+
+# Chefs-lieux (préfectures) des 96 départements métropolitains : (nom, lon, lat, décalage du nom)
+# décalage : "d" à droite (défaut), "g" à gauche, "h" au-dessus, "b" au-dessous, "" point seul
+PREFECTURES = [
+    ("Bourg-en-Bresse", 5.23, 46.21, "d"), ("Laon", 3.62, 49.56, "d"), ("Moulins", 3.33, 46.57, "d"),
+    ("Digne", 6.24, 44.09, "d"), ("Gap", 6.08, 44.56, "d"), ("Nice", 7.26, 43.70, "d"), ("Privas", 4.60, 44.74, "g"),
+    ("Charleville-Mézières", 4.72, 49.77, "d"), ("Foix", 1.61, 42.97, "d"), ("Troyes", 4.08, 48.30, "d"),
+    ("Carcassonne", 2.35, 43.21, "d"), ("Rodez", 2.57, 44.35, "d"), ("Marseille", 5.37, 43.30, "b"),
+    ("Caen", -0.36, 49.18, "d"), ("Aurillac", 2.44, 44.93, "d"), ("Angoulême", 0.16, 45.65, "d"),
+    ("La Rochelle", -1.15, 46.16, "g"), ("Bourges", 2.40, 47.08, "d"), ("Tulle", 1.77, 45.27, "d"),
+    ("Ajaccio", 8.74, 41.93, "g"), ("Bastia", 9.45, 42.70, "g"), ("Dijon", 5.04, 47.32, "d"),
+    ("Saint-Brieuc", -2.76, 48.51, "d"), ("Guéret", 1.87, 46.17, "d"), ("Périgueux", 0.72, 45.18, "d"),
+    ("Besançon", 6.02, 47.24, "d"), ("Valence", 4.89, 44.93, "d"), ("Évreux", 1.15, 49.02, "g"),
+    ("Chartres", 1.49, 48.45, "d"), ("Quimper", -4.10, 48.00, "d"), ("Nîmes", 4.36, 43.84, "d"),
+    ("Toulouse", 1.44, 43.60, "d"), ("Auch", 0.59, 43.65, "g"), ("Bordeaux", -0.58, 44.84, "d"),
+    ("Montpellier", 3.88, 43.61, "d"), ("Rennes", -1.68, 48.11, "d"), ("Châteauroux", 1.69, 46.81, "d"),
+    ("Tours", 0.69, 47.39, "d"), ("Grenoble", 5.72, 45.19, "d"), ("Lons-le-Saunier", 5.55, 46.67, "d"),
+    ("Mont-de-Marsan", -0.50, 43.89, "d"), ("Blois", 1.33, 47.59, "d"), ("Saint-Étienne", 4.39, 45.44, "g"),
+    ("Le Puy-en-Velay", 3.89, 45.04, "d"), ("Nantes", -1.55, 47.22, "d"), ("Orléans", 1.91, 47.90, "d"),
+    ("Cahors", 1.44, 44.45, "d"), ("Agen", 0.62, 44.20, "d"), ("Mende", 3.50, 44.52, "d"),
+    ("Angers", -0.55, 47.47, "d"), ("Saint-Lô", -1.09, 49.12, "g"), ("Châlons-en-Champagne", 4.36, 48.96, "d"),
+    ("Chaumont", 5.14, 48.11, "d"), ("Laval", -0.77, 48.07, "d"), ("Nancy", 6.18, 48.69, "d"),
+    ("Bar-le-Duc", 5.16, 48.77, "g"), ("Vannes", -2.76, 47.66, "d"), ("Metz", 6.18, 49.12, "d"),
+    ("Nevers", 3.16, 46.99, "d"), ("Lille", 3.06, 50.63, "d"), ("Beauvais", 2.08, 49.43, "g"),
+    ("Alençon", 0.09, 48.43, "g"), ("Arras", 2.78, 50.29, "d"), ("Clermont-Ferrand", 3.08, 45.78, "d"),
+    ("Pau", -0.37, 43.30, "g"), ("Tarbes", 0.08, 43.23, "d"), ("Perpignan", 2.90, 42.70, "d"),
+    ("Strasbourg", 7.75, 48.58, "d"), ("Colmar", 7.36, 48.08, "d"), ("Lyon", 4.84, 45.76, "d"),
+    ("Vesoul", 6.15, 47.62, "d"), ("Mâcon", 4.83, 46.31, "d"), ("Le Mans", 0.20, 48.00, "d"),
+    ("Chambéry", 5.92, 45.57, "g"), ("Annecy", 6.13, 45.90, "d"), ("Paris", 2.35, 48.86, "d"),
+    ("Rouen", 1.10, 49.44, "h"), ("Melun", 2.66, 48.54, "d"), ("Versailles", 2.13, 48.80, "g"),
+    ("Niort", -0.46, 46.32, "d"), ("Amiens", 2.30, 49.89, "d"), ("Albi", 2.15, 43.93, "d"),
+    ("Montauban", 1.35, 44.02, "g"), ("Toulon", 5.93, 43.12, "d"), ("Avignon", 4.81, 43.95, "d"),
+    ("La Roche-sur-Yon", -1.43, 46.67, "g"), ("Poitiers", 0.34, 46.58, "d"), ("Limoges", 1.26, 45.83, "d"),
+    ("Épinal", 6.45, 48.17, "g"), ("Auxerre", 3.57, 47.80, "d"), ("Belfort", 6.86, 47.64, "d"),
+    ("Évry", 2.44, 48.63, "b"), ("Nanterre", 2.21, 48.89, ""), ("Bobigny", 2.44, 48.91, ""),
+    ("Créteil", 2.46, 48.79, ""), ("Cergy", 2.06, 49.04, "h"),
+]
+
 OUT = bm.OUT_DIR / "precip"
 
 
@@ -340,6 +382,20 @@ def render(job: tuple) -> str:
     except Exception:
         pass
 
+    if SHOW_CITIES:
+        import matplotlib.patheffects as pe
+
+        halo = [pe.withStroke(linewidth=1.5, foreground="white", alpha=0.8)]
+        pos = {"d": (3, 0, "left", "center"), "g": (-3, 0, "right", "center"), "h": (0, 3, "center", "bottom"),
+               "b": (0, -3, "center", "top")}
+        tr = pc._as_mpl_transform(ax)
+        for nom, lo, la, cote in PREFECTURES:
+            ax.plot(lo, la, "o", ms=1.8, color="#1a1a1a", mec="white", mew=0.4, transform=pc, zorder=5)
+            if cote:
+                dx, dy, ha, va = pos[cote]
+                ax.annotate(nom, xy=(lo, la), xycoords=tr, xytext=(dx, dy), textcoords="offset points",
+                            fontsize=5.0, color="#1a1a1a", ha=ha, va=va, path_effects=halo, zorder=6)
+
     valid = run + dt.timedelta(hours=step)
     start = valid - dt.timedelta(hours=6)
     fig.text(0.02, yf(0.18), bm.MODELS[key]["titre"], fontsize=20, fontweight="bold", va="top")
@@ -354,10 +410,10 @@ def render(job: tuple) -> str:
         w = 0.92 / max(n, 1) - 0.03
         cax = fig.add_axes([x, 0.62 / H, w, 0.13 / H])
         sm = plt.cm.ScalarMappable(cmap=ListedColormap(colors), norm=BoundaryNorm(BINS, len(colors)))
-        cb = fig.colorbar(sm, cax=cax, orientation="horizontal", ticks=BINS[:-1] if n > 2 else BINS)
+        ticks = TICKS if n > 2 else BINS
+        cb = fig.colorbar(sm, cax=cax, orientation="horizontal", ticks=ticks)
         cb.ax.tick_params(labelsize=6, length=2)
-        cb.ax.set_xticklabels([str(b).rstrip("0").rstrip(".") if isinstance(b, float) else str(b)
-                               for b in (BINS[:-1] if n > 2 else BINS)])
+        cb.ax.set_xticklabels([str(b).rstrip("0").rstrip(".") if isinstance(b, float) else str(b) for b in ticks])
         cb.outline.set_linewidth(0.4)
         fig.text(x, 0.80 / H, label, fontsize=8, va="bottom", color="#222")
     note = "Hachures : indice de risque de grêle (estimation, pas une prévision)" \

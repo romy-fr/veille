@@ -9,6 +9,7 @@ l'application iPhone.
 | Bloc | Dossier | Workflow | Fréquence | Sortie (branche `publication`) | État |
 |---|---|---|---|---|---|
 | Météo – cartes Z500 et précipitations J+0 → J+6 | `meteo/cartes_j6/` | `meteo-cartes-j6.yml` | chaque jour, 9h30 | `meteo/cartes-j6/` | ✅ prêt |
+| Sport – notification météo la veille de chaque séance (ntfy) | `meteo/sport/` | `sport-notifications.yml` | toutes les heures | — (notification iPhone) | 🧪 test |
 | App – météo AROME (demain, sport, déplacement) | `app/meteo/` | `app-publication.yml` | à chaque modification | `app/meteo/` | 🧪 test |
 | App – onglet Climat (menus Température, Terre / mer, Banquise, Mers, France) | `app/climat/` | `app-publication.yml` | à chaque modification | `app/climat/` | 🧪 test |
 | Climat – température mondiale mensuelle depuis 1850 | `climat/temperature/` | `climat-mensuel.yml` | le 16 de chaque mois | `climat/temperature/` | 🧪 test |
@@ -35,16 +36,30 @@ Sorties (branche `publication`, dossier `meteo/cartes-j6/`) :
 - `<modele>.png` et `grille.png` : J+6 seule, et les 4 modèles en grille — GFS | IFS en haut,
   AIGFS | AIFS en bas (pour une notification) ;
 - `manifest.json` : runs utilisés, échéances, statut de chaque modèle (lu par la page et l'app) ;
-- `index.html` : page avec une **jauge J+0 → J+6** (glisser, flèches ←/→, lecture automatique)
-  et une bascule **Z500 & pression / Précipitations** ;
+- `index.html` : page avec une **jauge J+0 → J+6** (glisser, flèches ←/→, lecture automatique),
+  une bascule **Z500 & pression / Précipitations / Prévisions** (voir plus bas) ;
 - `precip/<modele>_<HHH>.png` et `precip/manifest.json` : **précipitations sur 6 h et leur type**,
-  centrées sur la France, de +6 h à +144 h (script `precip.py`, même grille GFS | IFS / AIGFS | AIFS) :
+  centrées sur la France, de +6 h à +144 h (script `precip.py`, même grille GFS | IFS / AIGFS | AIFS),
+  avec les 96 chefs-lieux de département (`SHOW_CITIES`) et une échelle de 0,2 à 100 mm en 6 h :
   - types : pluie, orage / averses (part convective dominante et instabilité), neige,
     verglas / grésil — GFS (types catégoriels, CAPE), IFS (`ptype`, CAPE), AIFS (part de
     neige, part convective) ; l'AIGFS n'affiche le type que si la NOAA le publie ;
   - **grêle** : aucun de ces modèles ne la prévoit ; les hachures sont un **indice de risque**
     estimé (forte instabilité, averses dominantes, cumul important). `SHOW_HAIL = False` pour le retirer ;
   - un échec de ce script n'empêche pas la publication des cartes Z500.
+
+### Onglet « Prévisions » de la page
+
+Prévisions pour un point, calculées dans le navigateur à partir de l'API gratuite d'Open-Meteo (usage non
+commercial, mention « Weather data by Open-Meteo.com », CC BY 4.0) — aucun serveur, aucun token :
+- **Lieu** : J+0 et J+1 avec **AROME** (Météo-France) heure par heure, puis **ECMWF IFS** par blocs de 3 h
+  jusqu'à J+6 : temps (icônes dessinées dans les couleurs des cartes), température, mm, vent moyen et rafales ;
+- **Séances** : séances de sport régulières (plusieurs jours, heure de départ, durée — 2 h par défaut — et heure
+  de la notification la veille) avec le résumé du temps entre l'aller et le retour de la prochaine séance ;
+- **Trajet** : lieu et heure de départ, lieu et heure d'arrivée (et retour éventuel), jusqu'à J+6 : temps au
+  départ et à l'arrivée, de l'heure précédente à l'heure suivante.
+
+Adresse directe : `…/meteo/cartes-j6/index.html#prevision` (ou `#seances`, `#trajet`).
 
 Ordre de grandeur par exécution : 0 token Claude, environ 120 Mo téléchargés (seuls les deux
 champs utiles de chaque échéance), 2 à 4 minutes, environ 10 Mo d'images publiées.
@@ -64,6 +79,24 @@ Fonds de carte : Natural Earth (domaine public). La source est imprimée en bas 
 - Réglages en haut de `meteo/cartes_j6/build_maps.py` : `FRAME_POINTS` (lieux à inclure dans
   le cadre), `LEVEL_HPA`, `Z_LEVELS` / `Z_TICKS` / `CMAP` (palette), `MSL_STEP` (isobares).
 - Test du rendu sans réseau : `python meteo/cartes_j6/build_maps.py --demo`.
+
+## Sport – notifications la veille
+
+`meteo/sport/notif_sport.py`, lancé toutes les heures par `sport-notifications.yml` : la veille d'une séance,
+à l'heure choisie, il calcule le résumé du temps entre le départ et le retour (mêmes règles que la page :
+AROME, sinon IFS ; alertes orage, neige, verglas, gel, rafales ≥ 60 km/h, pluie ≥ 5 mm) et l'envoie par
+**ntfy** (app iPhone gratuite et open source, https://ntfy.sh).
+
+À faire une fois :
+1. installer l'app **ntfy** et s'abonner au sujet affiché dans la page (Prévisions → Séances) ;
+2. dépôt → Settings → Secrets and variables → Actions : secret `NTFY_TOPIC` = ce sujet ;
+3. même page, onglet *Variables* : variable `SEANCES` = la configuration copiée depuis la page (à remettre à
+   jour après chaque changement de séances). Les horaires et lieux restent ainsi hors du dépôt public.
+
+Test : Actions → « Sport – notifications météo la veille » → Run workflow, case « test » cochée : envoie tout de
+suite le résumé de la prochaine séance. Les notifications peuvent arriver avec quelques minutes de retard
+(planification de GitHub). Test hors ligne : `python meteo/sport/notif_sport.py --sec --maintenant 2026-11-15T20:05`
+(séances lues dans `meteo/sport/seances.json` si la variable `SEANCES` est absente).
 
 ## App – météo AROME (prototype)
 

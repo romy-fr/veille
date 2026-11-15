@@ -252,7 +252,11 @@ def poster(url, headers, corps, nom):
             time.sleep(10 * (essai + 1))
             continue
         if r.status_code == 200:
-            return r.json()
+            try:
+                return r.json()
+            except ValueError:
+                raise Indisponible(f"{nom} : réponse illisible ({r.headers.get('content-type')}, "
+                                   f"{r.url}) {r.text[:200]!r}")
         msg = r.text[:300].replace("\n", " ")
         if r.status_code == 429 and "per day" not in msg.lower() and essai < 3:
             time.sleep(min(int(r.headers.get("retry-after", "0") or 0), 60) or 15 * (essai + 1))

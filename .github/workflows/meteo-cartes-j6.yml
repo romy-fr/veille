@@ -1,4 +1,4 @@
-name: Météo – cartes Z500 J+6
+name: Météo – cartes J+0 à J+6 (Z500 et précipitations)
 
 on:
   schedule:
@@ -34,12 +34,18 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.local/share/cartopy
-          key: cartopy-naturalearth-v2
+          key: cartopy-naturalearth-v3
 
       - name: Construire les cartes
         env:
           OUT_DIR: sortie
         run: python meteo/cartes_j6/build_maps.py
+
+      - name: Construire les cartes de précipitations
+        continue-on-error: true      # un échec ici n'empêche pas de publier les cartes Z500
+        env:
+          OUT_DIR: sortie
+        run: python meteo/cartes_j6/precip.py
 
       - name: Publier dans la branche "publication" (dossier meteo/cartes-j6)
         env:
@@ -59,4 +65,3 @@ jobs:
           git add -A
           git commit -q -m "Météo – cartes J+6 du $(date -u +%F)"
           git push -q -f "$REPO_URL" maj:publication
-

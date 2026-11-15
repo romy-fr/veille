@@ -3,10 +3,12 @@
 Reconstruit des cartes "Géopotentiel 500 hPa + pression au niveau de la mer" de J+0 à J+6
 par pas de 6 h, pour quatre modèles, à partir de DONNÉES OUVERTES :
 
-  - GFS   (NOAA)      : domaine public        -> bucket AWS noaa-gfs-bdp-pds
-  - IFS   (ECMWF)     : licence CC BY 4.0     -> ECMWF Open Data (miroir AWS)
-  - AIFS  (ECMWF)     : licence CC BY 4.0     -> ECMWF Open Data (miroir AWS)
-  - UKMO  (Met Office): licence CC BY-SA 4.0  -> bucket AWS met-office-atmospheric-model-data
+  - GFS    (NOAA, physique)  : domaine public     -> bucket AWS noaa-gfs-bdp-pds
+  - IFS    (ECMWF, physique) : licence CC BY 4.0  -> ECMWF Open Data (miroir AWS)
+  - AIGFS  (NOAA, IA)        : domaine public     -> serveur NOMADS de la NOAA
+  - AIFS   (ECMWF, IA)       : licence CC BY 4.0  -> ECMWF Open Data (miroir AWS)
+
+Grille : GFS en haut à gauche, IFS en haut à droite, AIGFS en bas à gauche, AIFS en bas à droite.
 
 Les échéances sont alignées sur le run de 00 UTC du jour : la jauge va de +0 h à +144 h
 et, pour une même position, les quatre cartes ont la même date de validité.
@@ -20,7 +22,7 @@ Usage :
 Sorties (dossier OUT_DIR) :
     <modele>_<HHH>.png   une carte par modèle et par échéance (HHH = heures depuis 00 UTC du jour)
     <modele>.png         copie de la carte à +144 h (J+6)
-    grille.png           les 4 modèles à +144 h (pour la notification)
+    grille.png           les 4 modèles à +144 h, GFS | IFS / AIGFS | AIFS (pour la notification)
     manifest.json        description de tout ce qui a été produit (lu par la page et par l'app)
     index.html           page de visualisation avec la jauge J+0 -> J+6
 """
@@ -38,7 +40,6 @@ import sys
 import tempfile
 import time
 import traceback
-import xml.etree.ElementTree as ET
 
 import numpy as np
 import requests
@@ -78,13 +79,13 @@ TIMEOUT = 120
 HTTP = requests.Session()
 HTTP.headers["User-Agent"] = "veille-cartes-j6/1.0 (usage personnel, non commercial)"
 
+# Ordre = disposition de la grille : GFS | IFS en haut, leurs modèles d'IA respectifs en bas
 MODELS = {
     "gfs": {"titre": "GFS", "source": "NOAA / NCEP — domaine public"},
     "ifs": {"titre": "ECMWF IFS", "source": "ECMWF Open Data — CC BY 4.0"},
-    "aifs": {"titre": "ECMWF AIFS", "source": "ECMWF Open Data — CC BY 4.0"},
-    "ukmo": {"titre": "UKMO", "source": "Met Office — CC BY-SA 4.0"},
+    "aigfs": {"titre": "AIGFS (IA NOAA)", "source": "NOAA / NCEP — domaine public"},
+    "aifs": {"titre": "ECMWF AIFS (IA)", "source": "ECMWF Open Data — CC BY 4.0"},
 }
-UKMO_MAX_H = 144                         # le modèle global du Met Office s'arrête à +144 h
 
 JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
@@ -152,39 +153,68 @@ def by_step(da: xr.DataArray) -> dict[int, xr.DataArray]:
 
 
 # --------------------------------------------------------------------------
-# GFS (NOAA, bucket AWS public, lecture partielle grâce au fichier .idx)
+# NOAA : GFS (bucket AWS public) et AIGFS (serveur NOMADS), lecture partielle via les fichiers .idx
 # --------------------------------------------------------------------------
-def _gfs_step(run: dt.datetime, step: int, tmp: str) -> Field:
-    base = (f"https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.{run:%Y%m%d}/{run:%H}/atmos/"
-            f"gfs.t{run:%H}z.pgrb2.0p25.f{step:03d}")
-    idx = HTTP.get(base + ".idx", timeout=TIMEOUT)
+NOMADS = "https://nomads.ncep.noaa.gov/pub/data/nccf/com"
+MSL_PATTERNS = (":PRMSL:mean sea level:", ":MSLET:mean sea level:", ":PRES:mean sea level:")
+
+
+def _idx_grab(url: str, patterns: tuple[str, ...], dest: str) -> str:
+    """Télécharge un seul champ d'un fichier GRIB2 (requête partielle grâce à l'index)."""
+    idx = HTTP.get(url + ".idx", timeout=TIMEOUT)
     idx.raise_for_status()
     lines = [ln.split(":") for ln in idx.text.strip().splitlines()]
-    files = {}
-    for key, pattern in {"z": f":HGT:{LEVEL_HPA} mb:", "msl": ":PRMSL:mean sea level:"}.items():
+    for pattern in patterns:
         for i, parts in enumerate(lines):
-            if f":{parts[3]}:{parts[4]}:" == pattern:
+            if len(parts) > 4 and f":{parts[3]}:{parts[4]}:" == pattern:
                 start = int(parts[1])
                 end = int(lines[i + 1][1]) - 1 if i + 1 < len(lines) else ""
-                r = HTTP.get(base, headers={"Range": f"bytes={start}-{end}"}, timeout=TIMEOUT)
+                r = HTTP.get(url, headers={"Range": f"bytes={start}-{end}"}, timeout=TIMEOUT)
                 r.raise_for_status()
-                files[key] = os.path.join(tmp, f"gfs_{key}_{step:03d}.grib2")
-                pathlib.Path(files[key]).write_bytes(r.content)
-                break
-        else:
-            raise RuntimeError(f"champ {pattern} absent de l'index")
-    return to_field(open_grib(files["z"])["gh"], open_grib(files["msl"])["prmsl"], "height")
+                pathlib.Path(dest).write_bytes(r.content)
+                return dest
+    raise RuntimeError(f"champ {patterns[0]} absent de {url.rsplit('/', 1)[-1]}")
 
 
-def fetch_gfs(run: dt.datetime, steps: list[int], tmp: str) -> dict[int, Field]:
+def _first_var(path: str) -> xr.DataArray:
+    ds = open_grib(path)
+    return ds[next(iter(ds.data_vars))]
+
+
+def _noaa_step(model: str, run: dt.datetime, step: int, tmp: str) -> Field:
+    if model == "gfs":
+        url = (f"https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.{run:%Y%m%d}/{run:%H}/atmos/"
+               f"gfs.t{run:%H}z.pgrb2.0p25.f{step:03d}")
+        z_urls, msl_urls = [url], [url]
+    else:  # aigfs : géopotentiel dans le fichier "pres", pression au sol dans "sfc"
+        base = f"{NOMADS}/aigfs/prod/aigfs.{run:%Y%m%d}/{run:%H}/model/atmos/grib2/aigfs.t{run:%H}z"
+        pres, sfc = f"{base}.pres.f{step:03d}.grib2", f"{base}.sfc.f{step:03d}.grib2"
+        z_urls, msl_urls = [pres], [sfc, pres]
+
+    def grab(urls: list[str], patterns: tuple[str, ...], tag: str) -> str:
+        last = None
+        for u in urls:
+            try:
+                return _idx_grab(u, patterns, os.path.join(tmp, f"{model}_{tag}_{step:03d}.grib2"))
+            except Exception as exc:
+                last = exc
+        raise last
+
+    fz = grab(z_urls, (f":HGT:{LEVEL_HPA} mb:",), "z")
+    fm = grab(msl_urls, MSL_PATTERNS, "msl")
+    return to_field(_first_var(fz), _first_var(fm), "height")
+
+
+def fetch_noaa(model: str, run: dt.datetime, steps: list[int], tmp: str) -> dict[int, Field]:
     out = {}
-    with cf.ThreadPoolExecutor(max_workers=8) as pool:
-        futures = {pool.submit(_gfs_step, run, s, tmp): s for s in steps}
+    workers = 8 if model == "gfs" else 4   # NOMADS limite le nombre de requêtes simultanées
+    with cf.ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(_noaa_step, model, run, s, tmp): s for s in steps}
         for fut in cf.as_completed(futures):
             try:
                 out[futures[fut]] = fut.result()
             except Exception as exc:
-                log(f"    GFS +{futures[fut]} h : {exc}")
+                log(f"    {model.upper()} +{futures[fut]} h : {exc}")
     return out
 
 
@@ -220,98 +250,11 @@ def fetch_ecmwf(model: str, run: dt.datetime, steps: list[int], tmp: str) -> dic
     return out
 
 
-# --------------------------------------------------------------------------
-# UKMO (Met Office, bucket AWS public, NetCDF "un paramètre / une échéance")
-# --------------------------------------------------------------------------
-UKMO_BUCKET = "https://met-office-atmospheric-model-data.s3.eu-west-2.amazonaws.com"
-S3NS = "{http://s3.amazonaws.com/doc/2006-03-01/}"
-
-
-def s3_list(prefix: str, delimiter: str | None = None) -> tuple[list[str], list[str]]:
-    params = {"list-type": "2", "prefix": prefix}
-    if delimiter:
-        params["delimiter"] = delimiter
-    keys, prefixes = [], []
-    while True:
-        r = HTTP.get(UKMO_BUCKET + "/", params=params, timeout=TIMEOUT)
-        r.raise_for_status()
-        root = ET.fromstring(r.content)
-        keys += [e.text for e in root.iter(f"{S3NS}Key")]
-        prefixes += [e.text for e in root.iter(f"{S3NS}Prefix") if e.text != prefix]
-        nxt = root.find(f"{S3NS}NextContinuationToken")
-        if nxt is None:
-            return keys, prefixes
-        params["continuation-token"] = nxt.text
-
-
-def ukmo_root() -> str:
-    _, prefixes = s3_list("", delimiter="/")
-    for p in prefixes:
-        if "global" in p and "determin" in p:
-            return p
-    raise RuntimeError(f"dossier du modèle global introuvable parmi {prefixes}")
-
-
-def pick_var(ds: xr.Dataset, needles: tuple[str, ...]) -> xr.DataArray:
-    for name, da in ds.data_vars.items():
-        meta = " ".join([name, str(da.attrs.get("standard_name", "")),
-                         str(da.attrs.get("long_name", ""))]).lower()
-        if da.ndim >= 2 and any(n in meta for n in needles):
-            return da
-    raise RuntimeError(f"variable {needles} introuvable ({list(ds.data_vars)})")
-
-
-def open_remote_nc(url: str, tmp: str) -> xr.Dataset:
-    """Lecture partielle à distance (seuls les morceaux utiles sont téléchargés) ;
-    à défaut, téléchargement complet du fichier."""
-    try:
-        import fsspec
-
-        f = fsspec.open(url, mode="rb", block_size=8 * 2**20).open()
-        return xr.open_dataset(f, engine="h5netcdf")
-    except Exception as exc:
-        log(f"    UKMO : lecture partielle impossible ({exc.__class__.__name__}), téléchargement complet")
-        dest = os.path.join(tmp, os.path.basename(url))
-        with HTTP.get(url, stream=True, timeout=TIMEOUT) as r:
-            r.raise_for_status()
-            with open(dest, "wb") as fh:
-                shutil.copyfileobj(r.raw, fh, 1 << 20)
-        return xr.open_dataset(dest)
-
-
-def _ukmo_step(root: str, run: dt.datetime, step: int, tmp: str) -> Field:
-    run_id = f"{run:%Y%m%dT%H%MZ}"
-    keys, _ = s3_list(f"{root}{run_id}/{run_id}-PT{step:04d}H00M-")
-    k_msl = next((k for k in keys if "pressure_at_mean_sea_level" in k), None)
-    k_z = next((k for k in keys if "geopotential_height_on_pressure_levels" in k), None) \
-        or next((k for k in keys if "height_ASL_on_pressure_levels" in k), None)
-    if not (k_msl and k_z):
-        raise RuntimeError("fichiers absents")
-    msl = pick_var(open_remote_nc(f"{UKMO_BUCKET}/{k_msl}", tmp), ("sea_level",))
-    z = pick_var(open_remote_nc(f"{UKMO_BUCKET}/{k_z}", tmp), ("geopotential", "height"))
-    lev = next(d for d in z.dims if "press" in d.lower())
-    target = LEVEL_HPA * 100 if float(z[lev].max()) > 2000 else LEVEL_HPA  # Pa ou hPa
-    return to_field(z.sel({lev: target}, method="nearest"), msl, "height")
-
-
-def fetch_ukmo(run: dt.datetime, steps: list[int], tmp: str) -> dict[int, Field]:
-    root = ukmo_root()
-    out = {}
-    with cf.ThreadPoolExecutor(max_workers=4) as pool:
-        futures = {pool.submit(_ukmo_step, root, run, s, tmp): s for s in steps if s <= UKMO_MAX_H}
-        for fut in cf.as_completed(futures):
-            try:
-                out[futures[fut]] = fut.result()
-            except Exception as exc:
-                log(f"    UKMO +{futures[fut]} h : {exc}")
-    return out
-
-
 FETCHERS = {
-    "gfs": fetch_gfs,
+    "gfs": lambda r, s, t: fetch_noaa("gfs", r, s, t),
     "ifs": lambda r, s, t: fetch_ecmwf("ifs", r, s, t),
+    "aigfs": lambda r, s, t: fetch_noaa("aigfs", r, s, t),
     "aifs": lambda r, s, t: fetch_ecmwf("aifs-single", r, s, t),
-    "ukmo": fetch_ukmo,
 }
 
 

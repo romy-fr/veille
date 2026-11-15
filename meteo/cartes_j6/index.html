@@ -31,7 +31,7 @@
            margin-top:-6px; }
   main { max-width:1400px; margin:0 auto; padding:14px 16px 28px; display:grid;
          grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; }
-  @media (max-width:760px) { main { grid-template-columns:1fr; } }
+  @media (max-width:520px) { main { gap:6px; padding:8px 6px 20px; } }
   figure { margin:0; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
   figure img { display:block; width:100%; height:auto; }
   .missing { aspect-ratio:1.33; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -59,10 +59,10 @@
   </div>
 </div>
 <main id="grid"></main>
-<footer>Cartes reconstruites à partir des données ouvertes : NOAA (GFS, domaine public) · ECMWF (IFS, AIFS, CC BY 4.0) ·
-  Met Office (UKMO, CC BY-SA 4.0) · fonds de carte Natural Earth.</footer>
+<footer>Cartes reconstruites à partir des données ouvertes : NOAA (GFS et AIGFS, domaine public) ·
+  ECMWF (IFS et AIFS, CC BY 4.0) · fonds de carte Natural Earth. En haut les modèles physiques, en bas leurs versions IA.</footer>
 <script>
-const ORDER = ["gfs", "ifs", "aifs", "ukmo"];
+const ORDER = ["gfs", "ifs", "aigfs", "aifs"];   // GFS | IFS en haut, leurs IA en bas
 const fmtDay = new Intl.DateTimeFormat("fr-FR", { weekday:"long", day:"numeric", month:"long", timeZone:"Europe/Paris" });
 const fmtHour = new Intl.DateTimeFormat("fr-FR", { hour:"2-digit", minute:"2-digit", timeZone:"Europe/Paris" });
 const fmtRun = new Intl.DateTimeFormat("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", timeZone:"UTC" });

@@ -108,7 +108,10 @@ def get(url):
 
 
 def txt(el):
-    return re.sub(r"\s+", " ", el.get_text(" ", strip=True)).strip() if el else ""
+    if not el:
+        return ""
+    t = re.sub(r"\s+", " ", el.get_text(" ", strip=True)).strip()
+    return re.sub(r"\s+([.,;:)\]])", r"\1", re.sub(r"([(\[])\s+", r"\1", t))
 
 
 # ---------------------------------------------------------------- lecture de Nature
@@ -157,6 +160,10 @@ def licence_courte(url_ou_texte):
 def lire_article(html):
     """Page d'un article → métadonnées, texte utile, figures, accès libre et licence."""
     soup = BeautifulSoup(html, "html.parser")
+    # Appels de références (« helicase¹,² ») : retirés, ils gênent la lecture et la traduction.
+    for sup in soup.select("sup"):
+        if sup.select_one('a[data-test="citation-ref"], a[href*="#ref-"]'):
+            sup.decompose()
     meta = lambda n: [m.get("content", "") for m in soup.select(f'meta[name="{n}"]')]
     ld = {}
     for s in soup.select('script[type="application/ld+json"]'):
@@ -628,6 +635,7 @@ def test():
     assert [f["numero"] for f in art["figures"]] == [1, 2] and art["figures"][0]["img"].startswith("https://media")
     assert "Methods" not in art["texte"] and "PRIMPOL binds" in art["texte"] and "Fig. 1" not in art["texte"]
     assert art["auteurs"][0] == "Cristian Polo Rivera"
+    assert art["resume_auteurs"].endswith("CMG helicase."), art["resume_auteurs"][-30:]
     print("lecture des pages : ok")
 
     get = faux_get

@@ -8,7 +8,7 @@ l'application iPhone.
 
 | Bloc | Dossier | Workflow | Fréquence | Sortie (branche `publication`) | État |
 |---|---|---|---|---|---|
-| Météo – cartes Z500 J+0 → J+6 | `meteo/cartes_j6/` | `meteo-cartes-j6.yml` | chaque jour, 9h30 | `meteo/cartes-j6/` | ✅ prêt |
+| Météo – cartes Z500 et précipitations J+0 → J+6 | `meteo/cartes_j6/` | `meteo-cartes-j6.yml` | chaque jour, 9h30 | `meteo/cartes-j6/` | ✅ prêt |
 | App – météo AROME (demain, sport, déplacement) | `app/meteo/` | `app-publication.yml` | à chaque modification | `app/meteo/` | 🧪 test |
 | App – onglet Climat (menus Température, Terre / mer, Banquise, Mers, France) | `app/climat/` | `app-publication.yml` | à chaque modification | `app/climat/` | 🧪 test |
 | Climat – température mondiale mensuelle depuis 1850 | `climat/temperature/` | `climat-mensuel.yml` | le 16 de chaque mois | `climat/temperature/` | 🧪 test |
@@ -23,7 +23,7 @@ l'application iPhone.
 | IA – actus | — | — | — | — | à venir |
 | Photo – actus | — | — | — | — | à venir |
 
-## Météo – cartes Z500 J+6
+## Météo – cartes Z500 et précipitations J+0 → J+6
 
 Chaque matin, le script télécharge les **données brutes** de quatre modèles — GFS et ECMWF IFS
 (physiques), AIGFS et ECMWF AIFS (leurs versions IA) — (géopotentiel
@@ -35,7 +35,16 @@ Sorties (branche `publication`, dossier `meteo/cartes-j6/`) :
 - `<modele>.png` et `grille.png` : J+6 seule, et les 4 modèles en grille — GFS | IFS en haut,
   AIGFS | AIFS en bas (pour une notification) ;
 - `manifest.json` : runs utilisés, échéances, statut de chaque modèle (lu par la page et l'app) ;
-- `index.html` : page avec une **jauge J+0 → J+6** (glisser, flèches ←/→, lecture automatique).
+- `index.html` : page avec une **jauge J+0 → J+6** (glisser, flèches ←/→, lecture automatique)
+  et une bascule **Z500 & pression / Précipitations** ;
+- `precip/<modele>_<HHH>.png` et `precip/manifest.json` : **précipitations sur 6 h et leur type**,
+  centrées sur la France, de +6 h à +144 h (script `precip.py`, même grille GFS | IFS / AIGFS | AIFS) :
+  - types : pluie, orage / averses (part convective dominante et instabilité), neige,
+    verglas / grésil — GFS (types catégoriels, CAPE), IFS (`ptype`, CAPE), AIFS (part de
+    neige, part convective) ; l'AIGFS n'affiche le type que si la NOAA le publie ;
+  - **grêle** : aucun de ces modèles ne la prévoit ; les hachures sont un **indice de risque**
+    estimé (forte instabilité, averses dominantes, cumul important). `SHOW_HAIL = False` pour le retirer ;
+  - un échec de ce script n'empêche pas la publication des cartes Z500.
 
 Ordre de grandeur par exécution : 0 token Claude, environ 120 Mo téléchargés (seuls les deux
 champs utiles de chaque échéance), 2 à 4 minutes, environ 10 Mo d'images publiées.
@@ -175,7 +184,7 @@ avec leur crédit.
 1. Crée un dépôt GitHub (par exemple `veille`).
 2. Dépose-y tout le contenu de ce dossier en gardant l'arborescence, y compris le dossier
    caché `.github/workflows/`.
-3. Onglet **Actions** → « Météo – cartes Z500 J+6 » → **Run workflow**.
+3. Onglet **Actions** → « Météo – cartes J+0 à J+6 (Z500 et précipitations) » → **Run workflow**.
 4. Après quelques minutes, les cartes et la page `index.html` sont dans la branche `publication`,
    dossier `meteo/cartes-j6/`. Pour ouvrir la page dans un navigateur, active GitHub Pages sur la
    branche `publication` (dépôt public, ou abonnement GitHub pour un dépôt privé).

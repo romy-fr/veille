@@ -1,0 +1,39 @@
+name: App – publication des pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**"]       # se lance dès qu'une page de l'app change
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publication          # même file d'attente que les autres blocs
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publier le dossier app/ dans la branche "publication"
+        env:
+          REPO_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads "$REPO_URL" publication >/dev/null; then
+            git clone -q --depth 1 -b publication "$REPO_URL" pub
+          else
+            git init -q -b publication pub
+          fi
+          rm -rf pub/app && cp -r app pub/app
+          cd pub
+          git checkout -q --orphan maj
+          git add -A
+          git commit -q -m "App – pages du $(date -u +%F)"
+          git push -q -f "$REPO_URL" maj:publication

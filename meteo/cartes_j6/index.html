@@ -37,17 +37,20 @@
   .missing { aspect-ratio:1.33; display:flex; flex-direction:column; align-items:center; justify-content:center;
              color:var(--mute); gap:4px; text-align:center; padding:20px; }
   .missing strong { color:var(--ink); font-size:18px; }
+  .prod { display:inline-flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; margin-left:auto; }
+  .prod button { width:auto; height:32px; border:0; border-radius:0; padding:0 12px; font-size:13px; background:var(--card); }
+  .prod button.on { background:var(--accent); color:#fff; }
   footer { max-width:1400px; margin:0 auto; padding:0 16px 24px; color:var(--mute); font-size:12px; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Géopotentiel 500 hPa & pression au sol</h1>
+  <h1 id="title">Géopotentiel 500 hPa & pression au sol</h1>
   <div class="sub" id="meta">Chargement…</div>
 </header>
 <div class="bar">
   <div class="ctrl">
-    <div class="when"><b id="jlabel">–</b><span id="dlabel"></span></div>
+    <div class="when"><b id="jlabel">–</b><span id="dlabel"></span><div class="prod" id="prod"></div></div>
     <div class="btns">
       <button id="prev" title="Échéance précédente (←)">◀</button>
       <button id="play" title="Lecture / pause (espace)">▶︎</button>
@@ -60,30 +63,29 @@
 </div>
 <main id="grid"></main>
 <footer>Cartes reconstruites à partir des données ouvertes : NOAA (GFS et AIGFS, domaine public) ·
-  ECMWF (IFS et AIFS, CC BY 4.0) · fonds de carte Natural Earth. En haut les modèles physiques, en bas leurs versions IA.</footer>
+  ECMWF (IFS et AIFS, CC BY 4.0) · fonds de carte Natural Earth. En haut les modèles physiques, en bas leurs versions IA. Grêle : indice de risque estimé, pas une prévision.</footer>
 <script>
+{
 const ORDER = ["gfs", "ifs", "aigfs", "aifs"];   // GFS | IFS en haut, leurs IA en bas
+const PRODUCTS = [
+  { id:"z500", label:"Z500 & pression", title:"Géopotentiel 500 hPa & pression au sol", url:"manifest.json", prefix:"" },
+  { id:"precip", label:"Précipitations", title:"Précipitations sur 6 h & type (France)", url:"precip/manifest.json", prefix:"precip/" },
+];
 const fmtDay = new Intl.DateTimeFormat("fr-FR", { weekday:"long", day:"numeric", month:"long", timeZone:"Europe/Paris" });
 const fmtHour = new Intl.DateTimeFormat("fr-FR", { hour:"2-digit", minute:"2-digit", timeZone:"Europe/Paris" });
 const fmtRun = new Intl.DateTimeFormat("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", timeZone:"UTC" });
-let M, offsets = [], idx = 0, timer = null;
-
-function cell(key) {
-  const fig = document.createElement("figure");
-  fig.id = "f-" + key;
-  document.getElementById("grid").appendChild(fig);
-  return fig;
-}
+const DATA = {};
+let P = null, M = null, offsets = [], idx = 0, timer = null;
 
 function show(i) {
   idx = (i + offsets.length) % offsets.length;
   const off = offsets[idx];
   document.getElementById("slider").value = idx;
   const valid = new Date(new Date(M.base).getTime() + off * 3600e3);
-  const day = Math.floor(off / 24);
-  document.getElementById("jlabel").textContent = `J+${day} · +${off} h`;
-  document.getElementById("dlabel").textContent =
-    `${fmtDay.format(valid)} à ${fmtHour.format(valid)} (heure de Paris)`;
+  document.getElementById("jlabel").textContent = `J+${Math.floor(off / 24)} · +${off} h`;
+  document.getElementById("dlabel").textContent = P.id === "precip"
+    ? `cumul de ${fmtHour.format(new Date(valid - 6 * 3600e3))} à ${fmtHour.format(valid)}, ${fmtDay.format(valid)} (heure de Paris)`
+    : `${fmtDay.format(valid)} à ${fmtHour.format(valid)} (heure de Paris)`;
   for (const key of ORDER) {
     const m = M.modeles[key], fig = document.getElementById("f-" + key);
     const file = m && m.images[String(off)];
@@ -91,18 +93,34 @@ function show(i) {
       let img = fig.querySelector("img");
       if (!img) { fig.innerHTML = ""; img = document.createElement("img"); fig.appendChild(img); }
       img.alt = `${m.titre}, +${off} h`;
-      img.src = file;
+      img.src = P.prefix + file;
     } else {
       fig.innerHTML = `<div class="missing"><strong>${m ? m.titre : key.toUpperCase()}</strong>
         <span>${m && m.statut === "ok" ? "Pas de sortie à cette échéance" : "Modèle indisponible aujourd'hui"}</span></div>`;
     }
   }
-  // Précharge l'échéance suivante pour une lecture fluide
   const nxt = offsets[(idx + 1) % offsets.length];
   for (const key of ORDER) {
     const f = M.modeles[key] && M.modeles[key].images[String(nxt)];
-    if (f) new Image().src = f;
+    if (f) new Image().src = P.prefix + f;
   }
+}
+
+function useProduct(id) {
+  const keep = offsets.length ? offsets[idx] : null;
+  P = PRODUCTS.find(x => x.id === id); M = DATA[id]; offsets = M.offsets;
+  document.querySelectorAll("#prod button").forEach(b => b.classList.toggle("on", b.dataset.p === id));
+  document.getElementById("title").textContent = P.title;
+  document.getElementById("slider").max = offsets.length - 1;
+  document.getElementById("ticks").innerHTML =
+    [...new Set(offsets.map(o => Math.floor(o / 24)))].map(d => `<span>J+${d}</span>`).join("");
+  const runs = ORDER.filter(k => M.modeles[k] && M.modeles[k].run)
+    .map(k => `${M.modeles[k].titre} ${fmtRun.format(new Date(M.modeles[k].run))}h`);
+  document.getElementById("meta").textContent =
+    (M.demo ? "Démonstration : champs simulés, pas une vraie prévision — " : "") +
+    `Runs : ${runs.join(" · ") || "aucun"} — mis à jour ${new Date(M.genere_le).toLocaleString("fr-FR", { timeZone:"Europe/Paris" })}`;
+  let j = keep == null ? offsets.length - 1 : offsets.findIndex(o => o >= keep);
+  show(j < 0 ? offsets.length - 1 : j);
 }
 
 function togglePlay() {
@@ -112,12 +130,16 @@ function togglePlay() {
   b.textContent = "❚❚";
 }
 
-fetch("manifest.json", { cache:"no-store" }).then(r => r.json()).then(data => {
-  M = data; offsets = M.offsets;
-  ORDER.forEach(cell);
-  const s = document.getElementById("slider");
-  s.max = offsets.length - 1;
-  s.addEventListener("input", e => show(+e.target.value));
+Promise.all(PRODUCTS.map(p => fetch(p.url, { cache:"no-store" }).then(r => r.ok ? r.json() : null).catch(() => null)))
+.then(list => {
+  list.forEach((d, i) => { if (d) DATA[PRODUCTS[i].id] = d; });
+  const avail = PRODUCTS.filter(p => DATA[p.id]);
+  if (!avail.length) throw new Error();
+  ORDER.forEach(key => { const f = document.createElement("figure"); f.id = "f-" + key; document.getElementById("grid").appendChild(f); });
+  document.getElementById("prod").innerHTML = avail.length > 1
+    ? avail.map(p => `<button data-p="${p.id}">${p.label}</button>`).join("") : "";
+  document.querySelectorAll("#prod button").forEach(b => b.onclick = () => useProduct(b.dataset.p));
+  document.getElementById("slider").addEventListener("input", e => show(+e.target.value));
   document.getElementById("prev").onclick = () => show(idx - 1);
   document.getElementById("next").onclick = () => show(idx + 1);
   document.getElementById("play").onclick = togglePlay;
@@ -126,15 +148,9 @@ fetch("manifest.json", { cache:"no-store" }).then(r => r.json()).then(data => {
     if (e.key === "ArrowRight") show(idx + 1);
     if (e.key === " ") { e.preventDefault(); togglePlay(); }
   });
-  document.getElementById("ticks").innerHTML =
-    [...new Set(offsets.map(o => Math.floor(o / 24)))].map(d => `<span>J+${d}</span>`).join("");
-  const runs = ORDER.filter(k => M.modeles[k] && M.modeles[k].run)
-    .map(k => `${M.modeles[k].titre} ${fmtRun.format(new Date(M.modeles[k].run)).replace(" ", " ")}h`);
-  document.getElementById("meta").textContent =
-    (M.demo ? "Démonstration : champs simulés, pas une vraie prévision — " : "") +
-    `Runs : ${runs.join(" · ") || "aucun"} — mis à jour ${new Date(M.genere_le).toLocaleString("fr-FR", { timeZone:"Europe/Paris" })}`;
-  show(offsets.length - 1);   // ouvre sur J+6
+  useProduct(avail[0].id);
 }).catch(() => { document.getElementById("meta").textContent = "manifest.json introuvable"; });
+}
 </script>
 </body>
 </html>

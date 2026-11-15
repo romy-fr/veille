@@ -37,8 +37,12 @@ from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap  # noqa: E40
 # --------------------------------------------------------------------------
 # Réglages
 # --------------------------------------------------------------------------
-ERDDAP = ("https://coastwatch.pfeg.noaa.gov/erddap/griddap/nceiErsstv5_LonPM180.csv0?"
+# Deux serveurs ERDDAP de la NOAA servent le même jeu : si le premier répond 503 (surcharge),
+# on réessaie, puis on passe au second.
+ERDDAP_SERVEURS = ["https://coastwatch.pfeg.noaa.gov/erddap", "https://upwell.pfeg.noaa.gov/erddap"]
+ERDDAP = ("{serveur}/griddap/nceiErsstv5_LonPM180.csv0?"
           "sst[({debut}-01-01):1:(last)][(0.0)][({la0}):{pas}:({la1})][({lo0}):{pas}:({lo1})]")
+ESSAIS = 3
 DEBUT = 1880
 REF = (1991, 2020)
 LISSAGE_MOIS = 12
@@ -101,10 +105,25 @@ def telecharger(z: dict) -> tuple[pd.Series, np.ndarray]:
     """Écarts mensuels à REF et climatologie (12 valeurs, °C)."""
     if z.get("source") == "noaa":
         return telecharger_noaa()
-    url = ERDDAP.format(debut=DEBUT, la0=z["lat"][0], la1=z["lat"][1], lo0=z["lon"][0], lo1=z["lon"][1],
-                        pas=z["pas"])
-    r = requests.get(url, timeout=TIMEOUT)
-    r.raise_for_status()
+    import time
+
+    r, derniere_erreur = None, None
+    for serveur in ERDDAP_SERVEURS:
+        url = ERDDAP.format(serveur=serveur, debut=DEBUT, la0=z["lat"][0], la1=z["lat"][1],
+                            lo0=z["lon"][0], lo1=z["lon"][1], pas=z["pas"])
+        for essai in range(ESSAIS):
+            try:
+                r = requests.get(url, timeout=TIMEOUT)
+                r.raise_for_status()
+                break
+            except requests.RequestException as exc:
+                derniere_erreur, r = exc, None
+                print(f"  {serveur} : essai {essai + 1}/{ESSAIS} échoué ({exc.__class__.__name__})")
+                time.sleep(20 * (essai + 1))
+        if r is not None:
+            break
+    if r is None:
+        raise derniere_erreur
     df = pd.read_csv(io.StringIO(r.text), header=None, names=["t", "p", "la", "lo", "sst"]).dropna()
     df = df[[z["garde"](la, lo) for la, lo in zip(df["la"], df["lo"])]]
     df["w"] = np.cos(np.radians(df["la"]))
@@ -216,7 +235,17 @@ def main() -> int:
     ap.add_argument("--zones", help="fichier d'écarts déjà calculés (test hors ligne)")
     args = ap.parse_args()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    donnees = lire_zones(args.zones) if args.zones else {k: telecharger(z) for k, z in ZONES.items()}
+    if args.zones:
+        donnees = lire_zones(args.zones)
+    else:
+        donnees = {}
+        for k, z in ZONES.items():            # une zone en échec n'empêche pas les autres
+            try:
+                donnees[k] = telecharger(z)
+            except Exception as exc:
+                print(f"{z['titre']} : échec ({exc}) — l'ancienne image reste en ligne")
+    if not donnees:
+        return 1
     out = {"source": "NOAA ERSST v5", "reference": f"{REF[0]}-{REF[1]}"}
     for k, (a, clim) in donnees.items():
         out[k] = render(k, a, clim, OUT_DIR / f"sst_{k}.png")

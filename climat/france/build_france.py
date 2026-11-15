@@ -75,7 +75,7 @@ PREFECTURES = [
     ("Ajaccio", 8.74, 41.93, "g"), ("Bastia", 9.45, 42.70, "g"), ("Dijon", 5.04, 47.32, "d"),
     ("Saint-Brieuc", -2.76, 48.51, "d"), ("Guéret", 1.87, 46.17, "d"), ("Périgueux", 0.72, 45.18, "d"),
     ("Besançon", 6.02, 47.24, "d"), ("Valence", 4.89, 44.93, "d"), ("Évreux", 1.15, 49.02, "g"),
-    ("Chartres", 1.49, 48.45, "g"), ("Quimper", -4.10, 48.00, "d"), ("Nîmes", 4.36, 43.84, "d"),
+    ("Chartres", 1.49, 48.45, "d"), ("Quimper", -4.10, 48.00, "d"), ("Nîmes", 4.36, 43.84, "d"),
     ("Toulouse", 1.44, 43.60, "d"), ("Auch", 0.59, 43.65, "g"), ("Bordeaux", -0.58, 44.84, "d"),
     ("Montpellier", 3.88, 43.61, "d"), ("Rennes", -1.68, 48.11, "d"), ("Châteauroux", 1.69, 46.81, "d"),
     ("Tours", 0.69, 47.39, "d"), ("Grenoble", 5.72, 45.19, "d"), ("Lons-le-Saunier", 5.55, 46.67, "d"),
@@ -86,7 +86,7 @@ PREFECTURES = [
     ("Chaumont", 5.14, 48.11, "d"), ("Laval", -0.77, 48.07, "d"), ("Nancy", 6.18, 48.69, "d"),
     ("Bar-le-Duc", 5.16, 48.77, "g"), ("Vannes", -2.76, 47.66, "d"), ("Metz", 6.18, 49.12, "d"),
     ("Nevers", 3.16, 46.99, "d"), ("Lille", 3.06, 50.63, "d"), ("Beauvais", 2.08, 49.43, "g"),
-    ("Alençon", 0.09, 48.43, "d"), ("Arras", 2.78, 50.29, "d"), ("Clermont-Ferrand", 3.08, 45.78, "d"),
+    ("Alençon", 0.09, 48.43, "g"), ("Arras", 2.78, 50.29, "d"), ("Clermont-Ferrand", 3.08, 45.78, "d"),
     ("Pau", -0.37, 43.30, "g"), ("Tarbes", 0.08, 43.23, "d"), ("Perpignan", 2.90, 42.70, "d"),
     ("Strasbourg", 7.75, 48.58, "d"), ("Colmar", 7.36, 48.08, "d"), ("Lyon", 4.84, 45.76, "d"),
     ("Vesoul", 6.15, 47.62, "d"), ("Mâcon", 4.83, 46.31, "d"), ("Le Mans", 0.20, 48.00, "d"),
@@ -380,7 +380,7 @@ def render_carte(grille: pd.DataFrame, champ: str, pas_hm: float, mois: pd.Times
                         path_effects=halo, zorder=6)
 
     m = f"{MOIS[mois.month - 1]} {mois.year}"
-    fig.text(0.02, yf(0.18), f"{titre} · {m}", fontsize=22, fontweight="bold", va="top")
+    fig.text(0.02, yf(0.18), f"{titre} · {m}", fontsize=20, fontweight="bold", va="top")
     fig.text(0.02, yf(0.62), resume, fontsize=10.5, va="top", color="#333333")
     fig.text(0.98, yf(0.18), etiquette + "\nmoyenne du mois, grille 8 km interpolée", fontsize=9, ha="right", va="top",
              color="#333333")

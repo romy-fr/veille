@@ -1,0 +1,13 @@
+numpy
+xarray
+requests
+matplotlib
+cartopy
+pillow
+cfgrib
+eccodes
+netCDF4
+h5netcdf
+fsspec
+aiohttp
+ecmwf-opendata

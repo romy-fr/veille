@@ -1,35 +1,11 @@
 {
-  "_aide": "Thèmes de l'onglet Nature. 'description' guide le tri par Claude ; 'mots_cles' sert de secours sans clé API (anglais, minuscules). Ajoute, retire ou renomme librement : l'app suit.",
+  "_aide": "Thèmes de l'onglet Nature. 'description' guide le tri par l'IA ; 'mots_cles' sert au tri sans IA (anglais, minuscules, début de mot). Ajoute, retire ou renomme librement : l'app suit.",
   "themes": [
     {
       "id": "climat",
       "nom": "Climat",
-      "description": "changement climatique, paléoclimat, océans, banquise, glaciers, calottes, niveau de la mer, cycle du carbone, extrêmes climatiques, impacts du climat",
-      "mots_cles": ["climate", "warming", "sea ice", "glacier", "ice sheet", "sea level", "ocean heat", "carbon dioxide", "co2", "paleoclimate", "el niño", "enso", "permafrost", "drought", "heatwave", "heat wave"]
-    },
-    {
-      "id": "meteo",
-      "nom": "Météo",
-      "description": "météorologie, atmosphère, prévision du temps, tempêtes, cyclones, précipitations, nuages, aérosols, circulation atmosphérique, modèles de prévision",
-      "mots_cles": ["weather", "atmospher", "forecast", "storm", "cyclone", "hurricane", "typhoon", "precipitation", "rainfall", "cloud", "aerosol", "jet stream", "monsoon", "tornado"]
-    },
-    {
-      "id": "ia",
-      "nom": "IA & données",
-      "description": "intelligence artificielle, apprentissage automatique, réseaux de neurones, modèles de langage, science des données, statistiques, calcul",
-      "mots_cles": ["artificial intelligence", "machine learning", "deep learning", "neural network", "language model", "llm", "transformer", "reinforcement learning", "algorithm", "data-driven"]
-    },
-    {
-      "id": "sport",
-      "nom": "Sport & corps",
-      "description": "activité physique, exercice, sport, physiologie de l'effort, muscles, endurance, sommeil, nutrition, métabolisme, performance humaine",
-      "mots_cles": ["exercise", "physical activity", "athlete", "muscle", "endurance", "fitness", "running", "sleep", "metabolism", "obesity", "nutrition", "training"]
-    },
-    {
-      "id": "photo",
-      "nom": "Photo & optique",
-      "description": "optique, lumière, capteurs et imagerie, photographie, lasers, photonique, vision des couleurs, télescopes et images astronomiques",
-      "mots_cles": ["optic", "photon", "imaging", "camera", "image sensor", "laser", "lens", "light field", "colour vision", "color vision", "telescope", "metasurface"]
+      "description": "réchauffement climatique et ses causes ou conséquences : hausse des températures, gaz à effet de serre, bilan carbone, AMOC et circulation océanique (Gulf Stream, circulation thermohaline), contenu de chaleur et vagues de chaleur marines, fonte des glaces (banquise, glaciers, calottes), hausse du niveau de la mer, dégel du pergélisol, points de bascule, extrêmes liés au réchauffement, paléoclimat éclairant le réchauffement actuel",
+      "mots_cles": ["global warming", "warming", "warmer", "climate change", "climate", "greenhouse", "carbon dioxide", "co2", "methane emission", "carbon budget", "net zero", "net-zero", "amoc", "atlantic meridional overturning", "overturning circulation", "gulf stream", "thermohaline", "ocean heat", "marine heatwave", "heatwave", "heat wave", "extreme heat", "sea level", "sea-level", "sea ice", "sea-ice", "ice sheet", "ice-sheet", "ice shelf", "glacier", "permafrost", "tipping point", "paleoclimate", "palaeoclimate"]
     }
   ]
 }

@@ -9,6 +9,7 @@ l'application iPhone.
 | Bloc | Dossier | Workflow | Fréquence | Sortie (branche `publication`) | État |
 |---|---|---|---|---|---|
 | Météo – cartes Z500 J+0 → J+6 | `meteo/cartes_j6/` | `meteo-cartes-j6.yml` | chaque jour, 9h30 | `meteo/cartes-j6/` | ✅ prêt |
+| App – météo AROME (demain, sport, déplacement) | `app/meteo/` | `app-publication.yml` | à chaque modification | `app/meteo/` | 🧪 test |
 | Climat – publications | — | — | — | — | à venir |
 | Bourse – résultats | — | — | — | — | à venir |
 | Sondages présidentielle | — | — | — | — | à venir |
@@ -47,6 +48,21 @@ Fonds de carte : Natural Earth (domaine public). La source est imprimée en bas 
 - Réglages en haut de `meteo/cartes_j6/build_maps.py` : `FRAME_POINTS` (lieux à inclure dans
   le cadre), `LEVEL_HPA`, `Z_LEVELS` / `Z_TICKS` / `CMAP` (palette), `MSL_STEP` (isobares).
 - Test du rendu sans réseau : `python meteo/cartes_j6/build_maps.py --demo`.
+
+## App – météo AROME (prototype)
+
+Page `app/meteo/index.html`, qui préfigure l'application iPhone. Elle interroge directement le
+dernier run **AROME** (Météo-France, 2,5 km) pour un point, via l'API gratuite d'Open-Meteo
+(usage non commercial, mention « Weather data by Open-Meteo.com »). Aucun serveur, aucun token.
+
+- **Demain** : résumé en une phrase (temps, températures matin / après-midi, ressenti, humidex,
+  orages et chute de température, créneaux de pluie, vent fort), calculé par des règles.
+- **Option sport** : préférences (type de temps, température, ressenti), barre de 6h à 22h du
+  rouge au vert, meilleur créneau et alertes (orage, humidex ≥ 40, froid ressenti intense).
+- **Déplacement** : ville et heure de départ, ville et heure d'arrivée, météo aux deux bouts.
+
+Limites : domaine AROME (France et pays voisins), échéance d'environ 2 jours.
+Adresse une fois GitHub Pages activé : `https://<compte>.github.io/veille/app/meteo/`.
 
 ## Mise en place
 

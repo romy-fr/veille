@@ -1,0 +1,60 @@
+name: Science – Nature
+
+# Chaque soir : nouveaux articles de recherche de Nature, triés par thème (science/nature/themes.json),
+# fiches en français pour ceux en accès libre. Nature met ses articles en ligne vers 16h (Londres).
+on:
+  schedule:
+    - cron: "17 19 * * *"     # tous les jours à 19h17 UTC (20h17 à Paris l'hiver), avant la brève de 20h30
+  workflow_dispatch:          # bouton "Run workflow" pour lancer à la main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publication          # un seul bloc publie à la fois
+  cancel-in-progress: false
+
+jobs:
+  nature:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      REPO_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dépendances Python
+        run: pip install requests beautifulsoup4
+
+      # La publication de la veille sert de mémoire : articles déjà vus et fiches déjà rédigées
+      # (aucun token dépensé deux fois pour le même article).
+      - name: Récupérer la branche "publication"
+        run: |
+          if git ls-remote --exit-code --heads "$REPO_URL" publication >/dev/null; then
+            git clone -q --depth 1 -b publication "$REPO_URL" pub
+          else
+            git init -q -b publication pub
+          fi
+
+      - name: Lire Nature et rédiger les fiches
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OUT_DIR: sortie/nature
+          PREV_JSON: pub/science/nature/nature.json
+          # MODELE_RESUME: claude-sonnet-5-5   # fiches plus fines, environ 3 fois plus cher
+        run: python science/nature/build_nature.py
+
+      - name: Publier dans la branche "publication" (dossier science/nature/)
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          mkdir -p pub/science/nature && cp -r sortie/nature/. pub/science/nature/
+          cd pub
+          git checkout -q --orphan maj          # un seul commit : l'historique ne grossit pas
+          git add -A
+          git commit -q -m "Nature – mise à jour du $(date -u +%F)"
+          git push -q -f "$REPO_URL" maj:publication

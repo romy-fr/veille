@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nature · test</title>
+<style>
+/* Même charte que app/meteo et app/climat : fond clair / nuit, accent bleu, police système, une colonne façon mobile.
+   Une fiche par article : titre traduit, l'essentiel, graphique, chiffres clés, résumé, schéma, lien. */
+:root{color-scheme:light dark;--bg:light-dark(#f4f6f8,#101418);--card:light-dark(#fff,#1a2027);--ink:light-dark(#14202b,#eef2f5);
+  --mute:light-dark(#5f6f7d,#93a3b0);--line:light-dark(#dfe5ea,#2a333c);--acc:light-dark(#1769d6,#62a8ff);
+  --soft:light-dark(#eaf2fd,#16263a);--gold:#e8a317}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:22px;margin:4px 0 2px}.sub{color:var(--mute);font-size:13px;margin:0 0 14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.chips button{border:1px solid var(--line);background:var(--card);color:var(--ink);font:500 14px/1 inherit;padding:8px 12px;border-radius:999px;cursor:pointer}
+.chips button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chips button small{opacity:.6;margin-left:3px}
+button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+select{font:500 15px inherit;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);margin:0 0 14px;width:100%}
+.hide{display:none!important}
+.vide{color:var(--mute);text-align:center;padding:34px 12px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+
+.art{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;margin-bottom:8px}
+.tag{background:var(--soft);color:var(--acc);font-weight:600;padding:3px 8px;border-radius:999px}
+.tags .d{color:var(--mute);margin-left:auto}
+.art h2{font-size:20px;line-height:1.3;margin:0 0 4px}
+.orig{color:var(--mute);font-style:italic;font-size:14px;margin:0 0 12px}
+.lead{font-size:17px;font-weight:600;line-height:1.45;margin:0 0 14px;padding-left:12px;border-left:4px solid var(--acc)}
+figure{margin:0 0 14px}
+figure .img{display:block;background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px}
+figure img{display:block;width:100%;height:auto;max-height:520px;object-fit:contain;border-radius:8px}
+figcaption{font-size:14px;margin-top:6px}
+.credit{display:block;color:var(--mute);font-size:12px;margin-top:2px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 14px}
+.k{background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+.k b{display:block;font-size:24px;line-height:1.2;color:var(--acc)}.k span{font-size:13px;color:var(--mute)}
+.art h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:0 0 6px}
+.resume{margin:0 0 16px}
+/* Schéma de conclusion : étapes reliées par des flèches, verticales sur mobile, en ligne sur grand écran */
+.flow{list-style:none;padding:0;margin:0 0 16px;display:grid;gap:22px}
+.flow li{position:relative;background:var(--soft);border-radius:12px;padding:10px 12px;font-size:15px}
+.flow li b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--acc)}
+.flow li:not(:last-child)::after{content:"↓";position:absolute;left:50%;bottom:-21px;transform:translateX(-50%);color:var(--mute);font-size:16px}
+.flow li:last-child{background:var(--acc);color:light-dark(#fff,#0b1520)}.flow li:last-child b{color:inherit;opacity:.8}
+@media(min-width:640px){.flow{grid-auto-flow:column;grid-auto-columns:1fr;gap:24px}
+  .flow li:not(:last-child)::after{content:"→";left:auto;right:-20px;bottom:auto;top:50%;transform:translateY(-50%)}}
+details{margin:0 0 14px;font-size:14px}details summary{cursor:pointer;color:var(--acc)}
+.note{font-size:13px;color:var(--mute);margin:0 0 10px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:12px}
+.save{border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 14px inherit;padding:9px 14px;border-radius:10px;cursor:pointer}
+.save.on{background:var(--gold);border-color:var(--gold);color:#1b1300}
+.lire{margin-left:auto;color:var(--acc);font-weight:600;font-size:14px;text-decoration:none}
+.lire:hover{text-decoration:underline}
+.art.payant{padding:12px 16px}
+.art.payant h2{font-size:16px;font-style:italic;font-weight:600}
+.lock{font-size:13px;color:var(--mute);margin:0 0 8px}
+footer{color:var(--mute);font-size:12px;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Nature</h1>
+  <p class="sub" id="sub">Nouveaux articles de recherche, résumés en français · accès libre seulement</p>
+  <div class="chips" id="chips"></div>
+  <select id="date" aria-label="Date de parution"></select>
+  <div id="liste"></div>
+  <footer>Source : Nature (Springer Nature) · résumés rédigés par Claude à partir des articles en accès libre ·
+    figures sous licence Creative Commons, avec leur crédit · touche un graphique pour l'agrandir</footer>
+</div>
+
+<script>
+{
+/* Données : science/nature/nature.json (même arborescence dans le dépôt et dans la branche publication).
+   ?data=<url> permet de tester avec un autre fichier. */
+const DATA = new URLSearchParams(location.search).get("data") || "../../science/nature/nature.json";
+const CLE_ETAT = "nature", CLE_SAUVES = "nature_sauves";
+const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+let donnees = { themes: [], articles: [] };
+let etat = { theme: "tous", date: null };
+let sauves = {};
+try { etat = Object.assign(etat, JSON.parse(localStorage.getItem(CLE_ETAT)) || {}); } catch (e) {}
+try { sauves = JSON.parse(localStorage.getItem(CLE_SAUVES)) || {}; } catch (e) {}
+const garder = () => { try { localStorage.setItem(CLE_ETAT, JSON.stringify(etat)); localStorage.setItem(CLE_SAUVES, JSON.stringify(sauves)); } catch (e) {} };
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const sur = u => /^https:\/\/(www\.nature\.com|media\.springernature\.com)\//.test(u || "") ? u : "#";
+const jourLong = d => { const x = new Date(d + "T12:00:00"); return `${JOURS[x.getDay()]} ${x.getDate()} ${MOIS[x.getMonth()]}`; };
+const MOIS_C = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+const jourCourt = d => { const x = new Date(d + "T12:00:00"); return `${x.getDate()} ${MOIS_C[x.getMonth()]} ${x.getFullYear()}`; };
+const nomTheme = id => (donnees.themes.find(t => t.id === id) || { nom: id }).nom;
+const rang = a => a.fiche ? 0 : a.acces === "libre" ? 1 : 2;
+
+function dansTheme(a) { return etat.theme === "tous" || (a.themes || []).includes(etat.theme); }
+
+function fiche(a) {
+  const tags = (a.themes || []).map(t => `<span class="tag">${esc(nomTheme(t))}</span>`).join("") + `<span class="d">${jourCourt(a.date)}</span>`;
+  const lien = `<a class="lire" href="${esc(sur(a.url))}" target="_blank" rel="noopener">Lire l'article sur nature.com ↗</a>`;
+  const bouton = `<button class="save ${sauves[a.doi] ? "on" : ""}" data-doi="${esc(a.doi)}">${sauves[a.doi] ? "★ Sauvegardé" : "☆ Sauvegarder"}</button>`;
+
+  if (a.acces !== "libre") {
+    return `<article class="art payant"><div class="tags">${tags}</div><h2>${esc(a.titre_en)}</h2>
+      <p class="lock">🔒 Accès payant — pas de résumé</p><div class="actions">${lien}</div></article>`;
+  }
+  const f = a.figure;
+  const fig = f ? `<figure><a class="img" href="${esc(sur(f.img_grande || f.img))}" target="_blank" rel="noopener">
+      <img src="${esc(sur(f.img))}" alt="${esc(f.titre)}" loading="lazy" onerror="this.closest('figure').remove()"></a>
+      <figcaption>${a.fiche && f.legende_fr ? `<b>Fig. ${f.numero}</b> — ${esc(f.legende_fr)}` : esc(f.titre)}
+      <span class="credit">${esc(f.credit || "")}</span></figcaption></figure>` : "";
+
+  if (!a.fiche) {
+    return `<article class="art"><div class="tags">${tags}</div><h2>${esc(a.titre_en)}</h2>
+      <p class="note">Résumé en français pas encore rédigé : chapeau et résumé d'origine (anglais).</p>
+      ${a.resume_nature ? `<p class="lead">${esc(a.resume_nature)}</p>` : ""}${fig}
+      ${a.resume_auteurs ? `<details><summary>Abstract</summary><p>${esc(a.resume_auteurs)}</p></details>` : ""}
+      <div class="actions">${bouton}${lien}</div></article>`;
+  }
+  const kpis = (a.chiffres_cles || []).length ? `<div class="kpis">${a.chiffres_cles.map(c =>
+      `<div class="k"><b>${esc(c.valeur)}</b><span>${esc(c.sens)}</span></div>`).join("")}</div>` : "";
+  const schema = (a.schema || []).length ? `<h3>Le schéma</h3><ol class="flow">${a.schema.map(e =>
+      `<li><b>${esc(e.etape)}</b>${esc(e.texte)}</li>`).join("")}</ol>` : "";
+  return `<article class="art"><div class="tags">${tags}</div>
+    <h2>${esc(a.titre_fr || a.titre_en)}</h2><p class="orig">${esc(a.titre_en)}</p>
+    <p class="lead">${esc(a.en_une_phrase)}</p>${fig}${kpis}
+    <h3>Résumé</h3><p class="resume">${esc(a.resume)}</p>${schema}
+    <div class="actions">${bouton}${lien}</div></article>`;
+}
+
+function dessiner() {
+  const arts = donnees.articles;
+  const vueSauves = etat.theme === "sauves";
+  if (!vueSauves && etat.theme !== "tous" && !donnees.themes.some(t => t.id === etat.theme)) etat.theme = "tous";
+
+  // Thèmes, avec le nombre d'articles de la date choisie
+  const dates = [...new Set(arts.map(a => a.date))].sort().reverse();
+  if (etat.date !== "tout" && !dates.includes(etat.date)) etat.date = dates[0] || "tout";
+  const duJour = a => etat.date === "tout" || a.date === etat.date;
+  const nb = id => arts.filter(a => duJour(a) && (id === "tous" || (a.themes || []).includes(id))).length;
+  const choix = [{ id: "tous", nom: "Tous" }, ...donnees.themes, { id: "sauves", nom: "★ Sauvegardés" }];
+  const chips = document.getElementById("chips");
+  chips.innerHTML = choix.map(t => `<button data-k="${esc(t.id)}" class="${t.id === etat.theme ? "on" : ""}">${esc(t.nom)}<small>${
+      t.id === "sauves" ? Object.keys(sauves).length : nb(t.id)}</small></button>`).join("");
+  chips.querySelectorAll("button").forEach(b => b.onclick = () => { etat.theme = b.dataset.k; garder(); dessiner(); });
+
+  const sel = document.getElementById("date");
+  sel.classList.toggle("hide", vueSauves || !dates.length);
+  sel.innerHTML = dates.map((d, i) => `<option value="${d}" ${d === etat.date ? "selected" : ""}>${i ? "" : "Dernière parution · "}${jourLong(d)}</option>`).join("")
+    + `<option value="tout" ${etat.date === "tout" ? "selected" : ""}>Les ${dates.length} dernières parutions</option>`;
+  sel.onchange = () => { etat.date = sel.value; garder(); dessiner(); };
+
+  let liste;
+  if (vueSauves) liste = Object.values(sauves).sort((a, b) => (b.sauve_le || "").localeCompare(a.sauve_le || ""));
+  else liste = arts.filter(a => duJour(a) && dansTheme(a)).sort((a, b) => b.date.localeCompare(a.date) || rang(a) - rang(b));
+
+  const el = document.getElementById("liste");
+  el.innerHTML = liste.length ? liste.map(fiche).join("") : `<div class="vide">${vueSauves
+    ? "Aucun article sauvegardé. Touche « ☆ Sauvegarder » sous une fiche pour la garder ici."
+    : arts.length ? "Aucun article de ce thème pour cette parution." : "Pas encore d'articles : la veille Nature n'a pas encore tourné."}</div>`;
+  el.querySelectorAll(".save").forEach(b => b.onclick = () => {
+    const d = b.dataset.doi;
+    if (sauves[d]) delete sauves[d];
+    else { const a = arts.find(x => x.doi === d) || sauves[d]; if (a) sauves[d] = Object.assign({}, a, { sauve_le: new Date().toISOString() }); }
+    garder(); dessiner();
+  });
+}
+
+fetch(DATA, { cache: "no-store" }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(j => {
+  donnees = { themes: j.themes || [], articles: j.articles || [] };
+  if (j.maj) document.getElementById("sub").textContent += ` · mis à jour le ${jourLong(j.maj.slice(0, 10))} à ${j.maj.slice(11, 16)} UTC`;
+  dessiner();
+}).catch(() => dessiner());
+}
+</script>
+</body>
+</html>

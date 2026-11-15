@@ -3,20 +3,31 @@
 Chaque soir, le script :
 1. lit la liste des articles de recherche de Nature (https://www.nature.com/nature/articles?type=article) ;
 2. garde ceux qui ne sont pas encore connus et les trie par thème (themes.json) — une seule requête
-   courte à Claude pour tous les titres du jour ;
+   courte à l'IA pour tous les titres du jour ;
 3. pour les articles d'un thème **en accès libre** (étiquette « Open Access » et licence Creative
-   Commons sur la page), lit l'article et demande à Claude une fiche en français : titre traduit,
+   Commons sur la page), lit l'article et demande à l'IA une fiche en français : titre traduit,
    l'essentiel en une phrase, résumé, chiffres clés, schéma de conclusion, choix et légende du
    graphique le plus parlant ;
 4. les articles payants d'un thème sont listés sans résumé (titre + lien) ;
 5. écrit nature.json (30 derniers jours) dans OUT_DIR, lu par app/nature/index.html.
 
+IA utilisée, dans l'ordre (on passe à la suivante si l'une refuse : clé absente, plus de crédit,
+plafond gratuit atteint…) :
+  1. Claude (API Anthropic)       si ANTHROPIC_API_KEY est fourni et le compte a du crédit ;
+  2. GitHub Models (gratuit)      avec le jeton du workflow (permission « models: read ») ;
+  3. traduction hors ligne        Argos Translate, gratuite et illimitée, mais sans schéma ni chiffres
+                                  clés (titre, chapeau, résumé et titre du graphique traduits) ;
+     le tri se fait alors par les mots-clés de themes.json.
+Une fiche « traduction » est refaite par une IA dès qu'une IA redevient disponible.
+
 Variables d'environnement :
-  ANTHROPIC_API_KEY  clé API Claude (secret GitHub). Sans clé : tri par mots-clés et résumé
-                     d'origine en anglais, sans fiche.
+  ANTHROPIC_API_KEY  clé API Claude (secret GitHub, facultatif)
+  GITHUB_TOKEN       jeton du workflow, pour GitHub Models (facultatif)
+  MODELE_GITHUB      modèle GitHub Models (défaut openai/gpt-4.1-mini)
   OUT_DIR            dossier de sortie (défaut sortie/nature)
   PREV_JSON          nature.json publié la veille : évite de refaire les articles déjà traités
   MODELE_TRI / MODELE_RESUME   modèles Claude (défaut : Haiku, le moins cher)
+  SANS_TRADUCTION=1  ne pas installer le traducteur hors ligne
   DEBUG=1            journal détaillé
 
 Test hors ligne : python build_nature.py --test   (fixtures de test/, sans réseau ni clé)
@@ -39,8 +50,9 @@ BASE = "https://www.nature.com"
 JOURS_ARCHIVE = 30          # articles gardés dans nature.json
 JOURS_PREMIER_PASSAGE = 7   # au tout premier passage, on remonte ces jours-là seulement
 PAGES_MAX = 5               # 20 articles par page
-MAX_FICHES = 12             # fiches Claude au plus par exécution (plafond de coût)
+MAX_FICHES = 12             # fiches IA au plus par exécution (plafond de coût / de quota)
 TEXTE_MAX = 24000           # caractères de l'article envoyés à Claude (≈ 6 000 tokens)
+TEXTE_MAX_GITHUB = 11000    # GitHub Models gratuit : 8 000 tokens par requête au plus
 PAUSE = 1.0                 # secondes entre deux pages Nature (politesse)
 MODELE_TRI = os.environ.get("MODELE_TRI", "claude-haiku-5-5")
 MODELE_RESUME = os.environ.get("MODELE_RESUME", "claude-haiku-5-5")
@@ -51,6 +63,9 @@ IDS_THEMES = [t["id"] for t in THEMES]
 OUT_DIR = pathlib.Path(os.environ.get("OUT_DIR", "sortie/nature"))
 PREV_JSON = os.environ.get("PREV_JSON", "")
 CLE = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+JETON_GITHUB = os.environ.get("GITHUB_TOKEN", "").strip()
+MODELE_GITHUB = os.environ.get("MODELE_GITHUB", "openai/gpt-4.1-mini")
+SANS_TRADUCTION = os.environ.get("SANS_TRADUCTION") == "1"
 DEBUG = os.environ.get("DEBUG") == "1"
 
 # Sections de l'article qu'on n'envoie pas à Claude (méthodes, références, mentions…).
@@ -66,7 +81,6 @@ SESSION.headers.update({
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) veille-perso/1.0 (+https://github.com/romy-fr/veille)",
     "Accept-Language": "en",
 })
-USAGE = {"entree": 0, "sortie": 0, "appels": 0}
 
 
 def log(*a):
@@ -213,27 +227,92 @@ def inverser_nom(n):
     return n
 
 
-# ---------------------------------------------------------------- Claude
-def claude(modele, systeme, message, max_tokens):
+# ---------------------------------------------------------------- IA
+class Indisponible(Exception):
+    """L'IA refuse pour la suite de l'exécution (clé invalide, plus de crédit, quota du jour…)."""
+
+
+USAGE = {"appels": 0, "entree": 0, "sortie": 0, "par_ia": {}}
+
+
+def compter(nom, entree, sortie):
+    USAGE["appels"] += 1
+    USAGE["entree"] += entree
+    USAGE["sortie"] += sortie
+    USAGE["par_ia"][nom] = USAGE["par_ia"].get(nom, 0) + 1
+
+
+def poster(url, headers, corps, nom):
+    """POST avec nouvelles tentatives ; lève Indisponible si l'IA refuse durablement."""
     for essai in range(4):
-        r = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={"x-api-key": CLE, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-            json={"model": modele, "max_tokens": max_tokens, "system": systeme,
-                  "messages": [{"role": "user", "content": message}]},
-            timeout=180,
-        )
-        if r.status_code in (429, 500, 502, 503, 529):
+        try:
+            r = requests.post(url, headers=headers, json=corps, timeout=180)
+        except requests.RequestException as e:
+            dbg(f"{nom} : {e}")
             time.sleep(10 * (essai + 1))
             continue
-        if r.status_code != 200:
-            raise RuntimeError(f"API Claude : HTTP {r.status_code} {r.text[:300]}")
-        j = r.json()
-        USAGE["appels"] += 1
-        USAGE["entree"] += j.get("usage", {}).get("input_tokens", 0)
-        USAGE["sortie"] += j.get("usage", {}).get("output_tokens", 0)
-        return "".join(b.get("text", "") for b in j.get("content", []) if b.get("type") == "text")
-    raise RuntimeError("API Claude : trop de refus (429/5xx)")
+        if r.status_code == 200:
+            return r.json()
+        msg = r.text[:300].replace("\n", " ")
+        if r.status_code == 429 and "per day" not in msg.lower() and essai < 3:
+            time.sleep(min(int(r.headers.get("retry-after", "0") or 0), 60) or 15 * (essai + 1))
+            continue
+        if r.status_code in (500, 502, 503, 529) and essai < 3:
+            time.sleep(10 * (essai + 1))
+            continue
+        if r.status_code == 413 or (r.status_code == 400 and "token" in msg.lower() and "credit" not in msg.lower()):
+            raise RuntimeError(f"{nom} : demande trop longue ({msg})")
+        raise Indisponible(f"{nom} : HTTP {r.status_code} {msg}")
+    raise Indisponible(f"{nom} : pas de réponse")
+
+
+def appel_claude(modele, systeme, message, max_tokens):
+    j = poster("https://api.anthropic.com/v1/messages",
+               {"x-api-key": CLE, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+               {"model": modele, "max_tokens": max_tokens, "system": systeme,
+                "messages": [{"role": "user", "content": message}]}, "Claude")
+    u = j.get("usage", {})
+    compter("claude", u.get("input_tokens", 0), u.get("output_tokens", 0))
+    return "".join(b.get("text", "") for b in j.get("content", []) if b.get("type") == "text")
+
+
+def appel_github(modele, systeme, message, max_tokens):
+    j = poster("https://models.github.ai/inference/chat/completions",
+               {"Authorization": f"Bearer {JETON_GITHUB}", "Content-Type": "application/json",
+                "Accept": "application/vnd.github+json"},
+               {"model": modele, "max_tokens": min(max_tokens, 3500), "temperature": 0.2,
+                "response_format": {"type": "json_object"},
+                "messages": [{"role": "system", "content": systeme}, {"role": "user", "content": message}]},
+               "GitHub Models")
+    u = j.get("usage", {})
+    compter("github", u.get("prompt_tokens", 0), u.get("completion_tokens", 0))
+    return j["choices"][0]["message"]["content"] or ""
+
+
+# IA disponibles, dans l'ordre de préférence. Une IA qui refuse est retirée pour la suite.
+IAS = []
+if CLE:
+    IAS.append({"nom": "claude", "texte_max": TEXTE_MAX,
+                "appel": lambda s, m, n, gros: appel_claude(MODELE_RESUME if gros else MODELE_TRI, s, m, n),
+                "modele": lambda gros: MODELE_RESUME if gros else MODELE_TRI})
+if JETON_GITHUB:
+    IAS.append({"nom": "github", "texte_max": TEXTE_MAX_GITHUB,
+                "appel": lambda s, m, n, gros: appel_github(MODELE_GITHUB, s, m, n),
+                "modele": lambda gros: MODELE_GITHUB})
+
+
+def ia(systeme, construire, max_tokens, gros=False):
+    """Demande à la première IA disponible. `construire(texte_max)` fabrique le message.
+    Retourne (réponse JSON, modèle). Lève Indisponible s'il ne reste aucune IA."""
+    while IAS:
+        f = IAS[0]
+        try:
+            rep = f["appel"](systeme, construire(f["texte_max"]), max_tokens, gros)
+            return extraire_json(rep), f["modele"](gros)
+        except Indisponible as e:
+            log(f"⚠ {e} → IA suivante")
+            IAS.pop(0)
+    raise Indisponible("aucune IA disponible")
 
 
 def extraire_json(s):
@@ -242,6 +321,37 @@ def extraire_json(s):
     return json.loads(s[i:j + 1])
 
 
+# ---------------------------------------------------------------- traduction hors ligne (secours)
+_TRAD = {"etat": None}
+
+
+def traducteur():
+    """Installe Argos Translate et le modèle anglais → français à la première utilisation."""
+    if _TRAD["etat"] is None:
+        _TRAD["etat"] = False
+        if SANS_TRADUCTION:
+            return None
+        try:
+            import subprocess
+            log("Installation du traducteur hors ligne (Argos Translate)…")
+            pip = [sys.executable, "-m", "pip", "install", "-q", "--disable-pip-version-check"]
+            subprocess.run(pip + ["torch", "--index-url", "https://download.pytorch.org/whl/cpu"], check=True)
+            subprocess.run(pip + ["argostranslate"], check=True)
+            import argostranslate.package
+            import argostranslate.translate
+            if not any(p.from_code == "en" and p.to_code == "fr"
+                       for p in argostranslate.package.get_installed_packages()):
+                argostranslate.package.update_package_index()
+                pkg = next(p for p in argostranslate.package.get_available_packages()
+                           if p.from_code == "en" and p.to_code == "fr")
+                argostranslate.package.install_from_path(pkg.download())
+            _TRAD["etat"] = lambda t: argostranslate.translate.translate(t, "en", "fr") if t else ""
+        except Exception as e:
+            log(f"⚠ traducteur hors ligne indisponible ({e})")
+    return _TRAD["etat"] or None
+
+
+# ---------------------------------------------------------------- tri par thème
 def trier_mots_cles(items):
     res = {}
     for it in items:
@@ -254,8 +364,6 @@ def trier(items):
     """Thèmes de chaque article, d'après le titre et le chapeau de Nature. Une seule requête."""
     if not items:
         return {}
-    if not CLE:
-        return trier_mots_cles(items)
     themes = "\n".join(f'- "{t["id"]}" : {t["description"]}' for t in THEMES)
     liste = "\n".join(f'{i}. {it["titre_en"]} — {it.get("resume_nature") or ""}' for i, it in enumerate(items, 1))
     systeme = ("Tu tries des articles scientifiques par thème. Un article n'entre dans un thème que s'il en "
@@ -265,13 +373,14 @@ def trier(items):
                'Réponds {"1": ["id", ...], "2": [], ...} avec, pour chaque numéro, la liste des thèmes '
                "(souvent vide).")
     try:
-        j = extraire_json(claude(MODELE_TRI, systeme, message, 60 + 25 * len(items)))
+        j, _ = ia(systeme, lambda _n: message, 80 + 25 * len(items))
     except Exception as e:
-        log(f"⚠ tri par Claude impossible ({e}) : tri par mots-clés")
+        log(f"⚠ tri par IA impossible ({e}) : tri par mots-clés")
         return trier_mots_cles(items)
     return {it["doi"]: [t for t in j.get(str(i), []) if t in IDS_THEMES] for i, it in enumerate(items, 1)}
 
 
+# ---------------------------------------------------------------- fiches
 SYSTEME_FICHE = """Tu rédiges des fiches de lecture d'articles scientifiques pour Romain, data scientist \
 passionné de météo, de climat et de sport, qui a une mémoire visuelle. Français clair, concis, précis, \
 sans jargon inutile (explique en quelques mots un terme technique indispensable). N'invente rien : chaque \
@@ -293,18 +402,18 @@ CONSIGNE_FICHE = """Fiche à produire, en JSON :
 graphique de données à un schéma de méthode. null s'il n'y a aucune figure."""
 
 
-def fiche(item, art):
+def fiche_ia(item, art):
     figs = "\n".join(f'Fig. {f["numero"]} — {f["titre"]} {f["legende"][:300]}' for f in art["figures"]) or "(aucune)"
-    message = (
-        f"Titre : {art['titre_en']}\n"
-        f"Chapeau de Nature : {item.get('resume_nature') or '—'}\n"
-        f"Mots-clés : {', '.join(art['sujets']) or '—'}\n\n"
-        f"Résumé des auteurs :\n{art['resume_auteurs']}\n\n"
-        f"Figures :\n{figs}\n\n"
-        f"Texte de l'article (extraits) :\n{art['texte']}\n\n"
-        + CONSIGNE_FICHE.replace("{themes}", ", ".join(IDS_THEMES))
-    )
-    j = extraire_json(claude(MODELE_RESUME, SYSTEME_FICHE, message, 1800))
+
+    def construire(texte_max):
+        return (f"Titre : {art['titre_en']}\n"
+                f"Chapeau de Nature : {item.get('resume_nature') or '—'}\n"
+                f"Mots-clés : {', '.join(art['sujets']) or '—'}\n\n"
+                f"Résumé des auteurs :\n{art['resume_auteurs']}\n\n"
+                f"Figures :\n{figs}\n\n"
+                f"Texte de l'article (extraits) :\n{art['texte'][:texte_max]}\n\n"
+                + CONSIGNE_FICHE.replace("{themes}", ", ".join(IDS_THEMES)))
+    j, modele = ia(SYSTEME_FICHE, construire, 1800, gros=True)
     return {
         "titre_fr": str(j.get("titre_fr") or "").strip(),
         "en_une_phrase": str(j.get("en_une_phrase") or "").strip(),
@@ -313,6 +422,20 @@ def fiche(item, art):
         "schema": [e for e in (j.get("schema") or []) if isinstance(e, dict) and e.get("texte")][:5],
         "figure": j.get("figure") if isinstance(j.get("figure"), dict) else None,
         "themes": [t for t in (j.get("themes") or []) if t in IDS_THEMES],
+        "modele": modele,
+    }
+
+
+def fiche_traduction(item, art, tr):
+    """Secours sans IA : titre, chapeau, résumé et titre du graphique traduits."""
+    titre_fig = re.sub(r"^Fig\.\s*\d+\s*:?\s*", "", art["figures"][0]["titre"]) if art["figures"] else ""
+    return {
+        "titre_fr": tr(art["titre_en"] or item["titre_en"]),
+        "en_une_phrase": tr(item.get("resume_nature") or ""),
+        "resume": tr(art["resume_auteurs"]),
+        "chiffres_cles": [], "schema": [], "themes": [],
+        "figure": {"numero": art["figures"][0]["numero"], "legende_fr": tr(titre_fig)} if art["figures"] else None,
+        "modele": "Argos Translate (traduction automatique)",
     }
 
 
@@ -333,7 +456,7 @@ def credit(item, art, f):
 
 def traiter(item, themes_tri, budget):
     """Complète un article trié dans un thème. Retourne l'entrée publiée."""
-    e = {k: item[k] for k in ("doi", "url", "titre_en", "date", "auteurs", "resume_nature", "vignette")}
+    e = {k: item.get(k) for k in ("doi", "url", "titre_en", "date", "auteurs", "resume_nature", "vignette")}
     e["themes"] = themes_tri
     if not item["libre"]:
         e.update(acces="payant")
@@ -345,30 +468,42 @@ def traiter(item, themes_tri, budget):
         return e
     e.update(acces="libre", licence=art["licence"], auteurs=art["auteurs"] or item["auteurs"],
              titre_en=art["titre_en"] or item["titre_en"], sujets=art["sujets"])
-    if CLE and budget["fiches"] > 0:
-        budget["fiches"] -= 1
+
+    fi, mode = None, None
+    if IAS and budget["fiches"] > 0:
         try:
-            fi = fiche(item, art)
-            choix = fi.pop("figure") or {}
-            try:
-                num = int(choix.get("numero"))
-            except (TypeError, ValueError):
-                num = None
-            f = figure_choisie(art, num)
-            if f:
-                f["legende_fr"] = str(choix.get("legende_fr") or "").strip() if f["numero"] == num else ""
-                f["credit"] = credit(e, art, f)
-            e.update(fi, figure=f, fiche=True, modele=MODELE_RESUME)
-            if fi["themes"]:
-                e["themes"] = sorted(set(themes_tri) | set(fi["themes"]), key=IDS_THEMES.index)
-            return e
+            fi, mode = fiche_ia(item, art), "ia"
+            budget["fiches"] -= 1
+        except Indisponible:
+            pass
         except Exception as ex:
-            log(f"  ⚠ fiche impossible ({ex}) : résumé d'origine")
-    # Sans clé (ou en cas d'échec) : résumé des auteurs en anglais et première figure.
-    f = figure_choisie(art, None)
+            log(f"  ⚠ fiche IA impossible ({ex})")
+    if fi is None and (tr := traducteur()):
+        try:
+            fi, mode = fiche_traduction(item, art, tr), "traduction"
+        except Exception as ex:
+            log(f"  ⚠ traduction impossible ({ex})")
+
+    if fi is None:   # ni IA ni traducteur : résumé d'origine en anglais et première figure
+        f = figure_choisie(art, None)
+        if f:
+            f["credit"] = credit(e, art, f)
+        e.update(resume_auteurs=art["resume_auteurs"], figure=f, fiche=False)
+        return e
+
+    choix = fi.pop("figure") or {}
+    try:
+        num = int(choix.get("numero"))
+    except (TypeError, ValueError):
+        num = None
+    f = figure_choisie(art, num)
     if f:
+        f["legende_fr"] = str(choix.get("legende_fr") or "").strip() if f["numero"] == num else ""
         f["credit"] = credit(e, art, f)
-    e.update(resume_auteurs=art["resume_auteurs"], figure=f, fiche=False)
+    themes_ia = fi.pop("themes")
+    e.update(fi, figure=f, fiche=True, mode=mode)
+    if themes_ia:
+        e["themes"] = sorted(set(themes_tri) | set(themes_ia), key=IDS_THEMES.index)
     return e
 
 
@@ -408,8 +543,8 @@ def main():
     articles = {a["doi"]: a for a in prev.get("articles", []) if a.get("date", "") >= garde}
     limite = garde if prev else (aujourd_hui - dt.timedelta(days=JOURS_PREMIER_PASSAGE)).isoformat()
 
-    log(f"Nature — {len(articles)} articles déjà publiés, recherche des nouveaux depuis le {limite}"
-        f" ({'avec' if CLE else 'SANS'} clé API Claude)")
+    log(f"Nature — {len(articles)} articles déjà publiés, recherche des nouveaux depuis le {limite} · "
+        f"IA : {', '.join(f['nom'] for f in IAS) or 'aucune'}")
     items = nouveaux_articles(vus, limite)
     log(f"{len(items)} nouveaux articles de recherche ({sum(i['libre'] for i in items)} en accès libre)")
 
@@ -428,16 +563,20 @@ def main():
             log(f"  ⚠ {e}")
             vus.pop(it["doi"], None)          # on réessaiera demain
 
-    # Articles libres publiés sans fiche (clé absente, plafond atteint, erreur) : on rattrape.
-    if CLE:
-        for doi, a in sorted(articles.items(), key=lambda x: x[1]["date"], reverse=True):
-            if a.get("acces") == "libre" and not a.get("fiche") and budget["fiches"] > 0:
-                log(f"• rattrapage de la fiche : {a['titre_en']}")
-                try:
-                    it = dict(a, libre=True)
-                    articles[doi] = traiter(it, a.get("themes", []), budget)
-                except Exception as e:
-                    log(f"  ⚠ {e}")
+    # Articles libres sans fiche, ou avec une simple traduction : on les refait si une IA répond.
+    for doi, a in sorted(articles.items(), key=lambda x: x[1]["date"], reverse=True):
+        a_refaire = a.get("acces") == "libre" and (not a.get("fiche") or a.get("mode") == "traduction")
+        if not a_refaire or (a.get("mode") == "traduction" and not IAS) or budget["fiches"] <= 0:
+            continue
+        if not IAS and SANS_TRADUCTION:
+            break
+        log(f"• rattrapage de la fiche : {a['titre_en']}")
+        try:
+            nouveau = traiter(dict(a, libre=True), a.get("themes", []), budget)
+            if nouveau.get("fiche") or not a.get("fiche"):
+                articles[doi] = nouveau
+        except Exception as e:
+            log(f"  ⚠ {e}")
 
     liste = sorted(articles.values(), key=lambda a: (a["date"], a["doi"]), reverse=True)
     sortie = {
@@ -446,19 +585,22 @@ def main():
         "themes": [{"id": t["id"], "nom": t["nom"]} for t in THEMES],
         "articles": liste,
         "vus": vus,
-        "usage": dict(USAGE, modele_tri=MODELE_TRI if CLE else None, modele_resume=MODELE_RESUME if CLE else None),
+        "usage": USAGE,
     }
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / "nature.json").write_text(json.dumps(sortie, ensure_ascii=False, indent=1), "utf-8")
-    log(f"→ {OUT_DIR / 'nature.json'} : {len(liste)} articles, "
-        f"{sum(1 for a in liste if a.get('fiche'))} fiches · Claude : {USAGE['appels']} appels, "
-        f"{USAGE['entree']} tokens en entrée, {USAGE['sortie']} en sortie")
+    modes = {}
+    for a in liste:
+        if a.get("fiche"):
+            modes[a.get("mode", "ia")] = modes.get(a.get("mode", "ia"), 0) + 1
+    log(f"→ {OUT_DIR / 'nature.json'} : {len(liste)} articles, fiches {modes or 0} · IA : "
+        f"{USAGE['appels']} appels {USAGE['par_ia']}, {USAGE['entree']} tokens en entrée, {USAGE['sortie']} en sortie")
 
 
 # ---------------------------------------------------------------- test hors ligne
 def test():
     """Rejoue le script sur les pages de test/ (copiées de nature.com), sans réseau."""
-    global get, claude, CLE, OUT_DIR, PREV_JSON, JOURS_PREMIER_PASSAGE, JOURS_ARCHIVE
+    global get, OUT_DIR, PREV_JSON, JOURS_PREMIER_PASSAGE, JOURS_ARCHIVE, SANS_TRADUCTION
     import tempfile
     JOURS_PREMIER_PASSAGE = JOURS_ARCHIVE = 100000     # les pages de test ne vieillissent pas
     rep = ICI / "test"
@@ -486,37 +628,68 @@ def test():
 
     get = faux_get
     sortie = pathlib.Path(tempfile.mkdtemp())
-    # 1) sans clé : tri par mots-clés (aucun thème ici → rien publié)
-    CLE, OUT_DIR = "", sortie / "a"
+    lire = lambda d: json.loads((d / "nature.json").read_text("utf-8"))
+
+    # 1) aucune IA, pas de traducteur : tri par mots-clés (aucun thème ici → rien publié)
+    IAS.clear()
+    SANS_TRADUCTION, _TRAD["etat"] = True, None
+    OUT_DIR = sortie / "a"
     main()
-    j = json.loads((OUT_DIR / "nature.json").read_text("utf-8"))
+    j = lire(OUT_DIR)
     assert len(j["vus"]) == 3 and j["articles"] == [], j
 
-    # 2) avec une fausse API : 1 payant + 1 libre dans un thème, fiche complète
-    def faux_claude(modele, systeme, message, max_tokens):
-        USAGE["appels"] += 1
-        if "Thèmes :" in message:
+    # 2) Claude refuse (plus de crédit) → GitHub Models prend le relais : 1 payant + 1 fiche
+    def claude_sans_credit(s, m, n, gros):
+        raise Indisponible("Claude : HTTP 400 credit balance is too low")
+
+    def faux_github(s, m, n, gros):
+        compter("github", 10, 10)
+        assert len(m) < 20000
+        if "Thèmes :" in m:
             return '{"1": ["climat"], "2": ["sport"], "3": []}'
         return json.dumps({"titre_fr": "Titre traduit", "en_une_phrase": "Une phrase.", "resume": "Résumé.",
                            "chiffres_cles": [{"valeur": "×3", "sens": "plus de reprises"}],
                            "schema": [{"etape": "Question", "texte": "a"}, {"etape": "Résultat", "texte": "b"}],
                            "figure": {"numero": 2, "legende_fr": "Légende."}, "themes": ["sport", "inconnu"]})
-    claude, CLE, OUT_DIR, PREV_JSON = faux_claude, "test", sortie / "b", ""
+    IAS[:] = [{"nom": "claude", "texte_max": TEXTE_MAX, "appel": claude_sans_credit, "modele": lambda g: "claude"},
+              {"nom": "github", "texte_max": TEXTE_MAX_GITHUB, "appel": faux_github, "modele": lambda g: "gpt"}]
+    OUT_DIR, PREV_JSON = sortie / "b", ""
     main()
-    j = json.loads((OUT_DIR / "nature.json").read_text("utf-8"))
+    j = lire(OUT_DIR)
     a = {x["doi"][-5:]: x for x in j["articles"]}
     assert a["391-w"]["acces"] == "payant" and "resume" not in a["391-w"]
     f = a["204-0"]
-    assert f["fiche"] and f["figure"]["numero"] == 2 and f["figure"]["legende_fr"] == "Légende."
+    assert f["fiche"] and f["mode"] == "ia" and f["modele"] == "gpt" and f["figure"]["numero"] == 2
+    assert f["figure"]["legende_fr"] == "Légende."
     assert f["figure"]["credit"] == "Fig. 2 · Polo Rivera et al., Nature (2026) · CC BY 4.0", f["figure"]["credit"]
     assert f["themes"] == ["sport"] and f["titre_fr"] == "Titre traduit"
+    assert [x["nom"] for x in IAS] == ["github"]
 
-    # 3) passage suivant à partir de la publication précédente : rien de nouveau, rien de perdu
-    PREV_JSON, OUT_DIR = str(OUT_DIR / "nature.json"), sortie / "c"
+    # 3) plus aucune IA : traduction de secours (faux traducteur), puis rattrapage par IA le lendemain
+    IAS.clear()
+    SANS_TRADUCTION, _TRAD["etat"] = False, (lambda t: f"FR({t[:20]})" if t else "")
+    prev_b = str(OUT_DIR / "nature.json")
+    d = lire(OUT_DIR)
+    for x in d["articles"]:
+        if x["acces"] == "libre":
+            x.update(fiche=False)
+    (sortie / "b2.json").write_text(json.dumps(d), "utf-8")
+    OUT_DIR, PREV_JSON = sortie / "c", str(sortie / "b2.json")
+    main()
+    f = {x["doi"][-5:]: x for x in lire(OUT_DIR)["articles"]}["204-0"]
+    assert f["fiche"] and f["mode"] == "traduction" and f["titre_fr"].startswith("FR(") and f["schema"] == []
+    assert f["figure"]["legende_fr"].startswith("FR(Reconstitution"), f["figure"]
+    IAS[:] = [{"nom": "github", "texte_max": TEXTE_MAX_GITHUB, "appel": faux_github, "modele": lambda g: "gpt"}]
+    OUT_DIR, PREV_JSON = sortie / "d", str(OUT_DIR / "nature.json")
+    main()
+    f = {x["doi"][-5:]: x for x in lire(OUT_DIR)["articles"]}["204-0"]
+    assert f["mode"] == "ia" and f["titre_fr"] == "Titre traduit"
+
+    # 4) passage suivant : rien de nouveau, aucun appel
+    OUT_DIR, PREV_JSON = sortie / "e", str(OUT_DIR / "nature.json")
     n = USAGE["appels"]
     main()
-    j2 = json.loads((OUT_DIR / "nature.json").read_text("utf-8"))
-    assert len(j2["articles"]) == 2 and USAGE["appels"] == n, "aucun nouvel appel attendu"
+    assert len(lire(OUT_DIR)["articles"]) == 2 and USAGE["appels"] == n, "aucun nouvel appel attendu"
     print("tests : ok")
 
 

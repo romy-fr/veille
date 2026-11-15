@@ -6,9 +6,15 @@ on:
   schedule:
     - cron: "17 19 * * *"     # tous les jours à 19h17 UTC (20h17 à Paris l'hiver), avant la brève de 20h30
   workflow_dispatch:          # bouton "Run workflow" pour lancer à la main
+    inputs:
+      repartir_de_zero:
+        description: "Oublier la publication précédente (refait le tri et les fiches des 7 derniers jours)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
+  models: read                # GitHub Models (IA gratuite) avec le jeton du workflow
 
 concurrency:
   group: publication          # un seul bloc publie à la fois
@@ -30,6 +36,13 @@ jobs:
       - name: Dépendances Python
         run: pip install requests beautifulsoup4
 
+      # Traducteur hors ligne (secours si aucune IA ne répond) : installé seulement s'il sert.
+      - name: Cache du traducteur hors ligne
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/argos-translate
+          key: argos-en-fr-v1
+
       # La publication de la veille sert de mémoire : articles déjà vus et fiches déjà rédigées
       # (aucun token dépensé deux fois pour le même article).
       - name: Récupérer la branche "publication"
@@ -42,9 +55,10 @@ jobs:
 
       - name: Lire Nature et rédiger les fiches
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # Claude, si le compte a du crédit
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}             # GitHub Models, gratuit, en secours
           OUT_DIR: sortie/nature
-          PREV_JSON: pub/science/nature/nature.json
+          PREV_JSON: ${{ inputs.repartir_de_zero && 'aucun' || 'pub/science/nature/nature.json' }}
           # MODELE_RESUME: claude-sonnet-5-5   # fiches plus fines, environ 3 fois plus cher
         run: python science/nature/build_nature.py
 

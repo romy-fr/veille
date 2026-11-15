@@ -1,1 +1,62 @@
+name: Météo – cartes Z500 J+6
+
+on:
+  schedule:
+    - cron: "30 8 * * *"     # 8h30 UTC = 9h30 à Paris en hiver (10h30 en été)
+  workflow_dispatch:          # bouton "Run workflow" pour lancer à la main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publication          # un seul bloc publie à la fois
+  cancel-in-progress: false
+
+jobs:
+  cartes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Bibliothèque GRIB (eccodes)
+        run: sudo apt-get update -q && sudo apt-get install -y -q libeccodes-dev
+
+      - name: Dépendances Python
+        run: pip install -r requirements.txt
+
+      - name: Cache des fonds de carte
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/cartopy
+          key: cartopy-naturalearth-v2
+
+      - name: Construire les cartes
+        env:
+          OUT_DIR: sortie
+        run: python meteo/cartes_j6/build_maps.py
+
+      - name: Publier dans la branche "publication" (dossier meteo/cartes-j6)
+        env:
+          REPO_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads "$REPO_URL" publication >/dev/null; then
+            git clone -q --depth 1 -b publication "$REPO_URL" pub
+          else
+            git init -q -b publication pub
+          fi
+          rm -rf pub/meteo/cartes-j6 && mkdir -p pub/meteo/cartes-j6
+          cp -r sortie/. pub/meteo/cartes-j6/
+          cd pub
+          git checkout -q --orphan maj          # un seul commit : l'historique ne grossit pas
+          git add -A
+          git commit -q -m "Météo – cartes J+6 du $(date -u +%F)"
+          git push -q -f "$REPO_URL" maj:publication
 

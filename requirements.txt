@@ -11,3 +11,7 @@ h5netcdf
 fsspec
 aiohttp
 ecmwf-opendata
+pandas
+scipy
+pyproj
+shapely

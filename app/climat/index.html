@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Climat · test</title>
+<style>
+/* Même charte que app/meteo : fond clair / nuit, accent bleu, police système, une colonne façon mobile.
+   Les graphiques sont les PNG produits par les scripts de climat/ (même gabarit que les cartes J+6). */
+:root{color-scheme:light dark;--bg:light-dark(#f4f6f8,#101418);--card:light-dark(#fff,#1a2027);--ink:light-dark(#14202b,#eef2f5);
+  --mute:light-dark(#5f6f7d,#93a3b0);--line:light-dark(#dfe5ea,#2a333c);--acc:light-dark(#1769d6,#62a8ff)}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:22px;margin:4px 0 2px}.sub{color:var(--mute);font-size:13px;margin:0 0 14px}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-bottom:12px}
+.tabs button{border:0;background:none;color:var(--mute);font:600 13px/1 inherit;padding:11px 2px;border-radius:9px;cursor:pointer}
+.tabs button.on{background:var(--acc);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chips button{border:1px solid var(--line);background:var(--card);color:var(--ink);font:500 14px/1 inherit;padding:8px 12px;border-radius:999px;cursor:pointer}
+.chips button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:12px;overflow:hidden}
+.card img{display:block;width:100%;height:auto;border-radius:9px}
+.card a{display:block}
+.missing{color:#5f6f7d;font-size:14px;padding:30px 12px;text-align:center}
+.note{color:var(--mute);font-size:13px;margin:-4px 2px 12px}
+.hide{display:none}
+select{font:500 15px inherit;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);margin:0 0 12px;width:100%}
+footer{color:var(--mute);font-size:12px;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Climat</h1>
+  <p class="sub">Prototype · graphiques mis à jour par les scripts de la veille</p>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div class="chips" id="chips"></div>
+  <p class="note" id="note"></p>
+  <select id="mois" class="hide" aria-label="Mois"></select>
+  <div id="figs"></div>
+  <footer>Données : Met Office / CRU (HadCRUT5), NOAA (NCEI, ERSST v5, NSIDC), Copernicus C3S, Météo-France · touche une image pour l'agrandir</footer>
+</div>
+
+<script>
+{
+/* Chemins relatifs à app/climat/ : les images sont dans climat/<bloc>/ (même arborescence dans le dépôt
+   et dans la branche publication). */
+const R = "../../climat/";
+const ONGLETS = {
+  temp: { nom: "Température", choix: { monde: { nom: "Monde", img: ["temperature/temperature_mensuelle.png"] } },
+          note: "Température mondiale mensuelle depuis 1850, écart à 1850-1900 (gauche) et à 1991-2020 (droite)." },
+  terre: { nom: "Terre / mer", choix: {
+      monde: { nom: "Monde", img: ["temperature/temperature_terre_mer_monde.png"] },
+      hn: { nom: "Hémisphère nord", img: ["temperature/temperature_terre_mer_hn.png"] },
+      hs: { nom: "Hémisphère sud", img: ["temperature/temperature_terre_mer_hs.png"] },
+      arctique: { nom: "Arctique", img: ["temperature/temperature_terre_mer_arctique.png"] },
+      antarctique: { nom: "Antarctique", img: ["temperature/temperature_terre_mer_antarctique.png"] } },
+    note: "Moyenne annuelle depuis 1850. Arctique et Antarctique : terres et mers confondues (la NOAA ne les sépare pas)." },
+  glace: { nom: "Banquise", choix: {
+      arctique: { nom: "Arctique", img: ["banquise/banquise_annuelle_arctique.png", "banquise/banquise_arctique.png"] },
+      antarctique: { nom: "Antarctique", img: ["banquise/banquise_annuelle_antarctique.png", "banquise/banquise_antarctique.png"] } },
+    note: "En haut : l'année au jour le jour. En bas : l'écart mensuel à 1981-2010 depuis 1978." },
+  mers: { nom: "Mers", choix: {
+      monde: { nom: "Monde", img: ["mers/sst_monde.png"] },
+      nino12: { nom: "Niño 1+2", img: ["mers/sst_nino12.png"] },
+      nino34: { nom: "Niño 3.4", img: ["mers/sst_nino34.png"] },
+      med: { nom: "Méditerranée", img: ["mers/sst_med.png"] },
+      arctic: { nom: "Arctique", img: ["mers/sst_arctic.png"] } },
+    note: "Température de surface de la mer, écart mensuel à la normale 1991-2020 depuis 1880." },
+  france: { nom: "France", choix: {
+      serie: { nom: "Température", img: ["france/france_temperature_mensuelle.png"] },
+      cartes: { nom: "Cartes du mois", mois: true,
+                img: ["france/france_carte_temperature_{m}.png", "france/france_carte_precipitations_{m}.png"] } },
+    note: "Météo-France (SIM, grille 8 km) : température mensuelle depuis 1958 et cartes mensuelles de l'année, comparées à la normale 1991-2020." },
+};
+
+let etat = { onglet: "temp", choix: {}, mois: null };
+let moisDispo = null;   // liste des cartes mensuelles disponibles, lue dans climat/france/france.json
+const NOMS_MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
+                   "septembre", "octobre", "novembre", "décembre"];
+async function chargerMois() {
+  try {
+    const j = await (await fetch(R + "france/france.json", { cache: "no-store" })).json();
+    moisDispo = (j.cartes || []).map(c => c.mois).reverse();          // le plus récent d'abord
+  } catch (e) { moisDispo = []; }
+}
+try { etat = Object.assign(etat, JSON.parse(localStorage.getItem("climat")) || {}); } catch (e) {}
+
+function dessiner() {
+  const o = ONGLETS[etat.onglet] || ONGLETS.temp;
+  const cles = Object.keys(o.choix);
+  const c = o.choix[etat.choix[etat.onglet]] ? etat.choix[etat.onglet] : cles[0];
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.k === etat.onglet));
+  const chips = document.getElementById("chips");
+  chips.classList.toggle("hide", cles.length < 2);
+  chips.innerHTML = cles.map(k => `<button data-k="${k}" class="${k === c ? "on" : ""}">${o.choix[k].nom}</button>`).join("");
+  chips.querySelectorAll("button").forEach(b => b.onclick = () => { etat.choix[etat.onglet] = b.dataset.k; sauver(); dessiner(); });
+  document.getElementById("note").textContent = o.note;
+  const sel = document.getElementById("mois"), ch = o.choix[c];
+  let imgs = ch.img;
+  sel.classList.toggle("hide", !ch.mois);
+  if (ch.mois) {
+    if (moisDispo === null) { chargerMois().then(dessiner); return; }
+    if (!moisDispo.length) { document.getElementById("figs").innerHTML = '<div class="card"><div class="missing">Cartes pas encore produites</div></div>'; return; }
+    if (!moisDispo.includes(etat.mois)) etat.mois = moisDispo[0];
+    sel.innerHTML = moisDispo.map(m => `<option value="${m}" ${m === etat.mois ? "selected" : ""}>${NOMS_MOIS[+m.slice(5) - 1]} ${m.slice(0, 4)}</option>`).join("");
+    sel.onchange = () => { etat.mois = sel.value; sauver(); dessiner(); };
+    imgs = ch.img.map(p => p.replace("{m}", etat.mois));
+  }
+  document.getElementById("figs").innerHTML = imgs.map(p =>
+    `<div class="card"><a href="${R + p}" target="_blank" rel="noopener"><img src="${R + p}" alt="${o.nom} · ${o.choix[c].nom}"
+      onerror="this.closest('.card').innerHTML='<div class=missing>Graphique pas encore produit</div>'"></a></div>`).join("");
+}
+function sauver() { try { localStorage.setItem("climat", JSON.stringify(etat)); } catch (e) {} }
+
+document.getElementById("tabs").innerHTML = Object.entries(ONGLETS)
+  .map(([k, o]) => `<button role="tab" data-k="${k}">${o.nom}</button>`).join("");
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => { etat.onglet = b.dataset.k; sauver(); dessiner(); });
+dessiner();
+}
+</script>
+</body>
+</html>

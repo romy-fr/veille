@@ -1,0 +1,55 @@
+name: Climat – banquise (quotidien)
+
+# NSIDC Sea Ice Index v4 : écart mensuel depuis 1978 et année au jour le jour, Arctique et Antarctique.
+on:
+  schedule:
+    - cron: "47 10 * * *"     # chaque jour à 10h47 UTC (le NSIDC publie la veille dans la nuit)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publication
+  cancel-in-progress: false
+
+jobs:
+  banquise:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Dépendances Python
+        run: pip install pandas matplotlib requests
+
+      - name: Écart mensuel depuis 1978
+        env: { OUT_DIR: sortie/banquise }
+        run: python climat/banquise/build_banquise.py
+
+      - name: Année au jour le jour
+        env: { OUT_DIR: sortie/banquise }
+        run: python climat/banquise/build_banquise_annuel.py
+
+      - name: Publier dans la branche "publication" (dossier climat/banquise)
+        env:
+          REPO_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads "$REPO_URL" publication >/dev/null; then
+            git clone -q --depth 1 -b publication "$REPO_URL" pub
+          else
+            git init -q -b publication pub
+          fi
+          mkdir -p pub/climat/banquise && cp -r sortie/banquise/. pub/climat/banquise/
+          cd pub
+          git checkout -q --orphan maj
+          git add -A
+          git commit -q -m "Climat – banquise du $(date -u +%F)"
+          git push -q -f "$REPO_URL" maj:publication

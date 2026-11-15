@@ -1,0 +1,82 @@
+name: Climat – mise à jour mensuelle
+
+# Température mondiale (HadCRUT5), terres / océans (NOAA), mers par zone (ERSST v5) et France
+# (Météo-France SIM). Le 16 du mois, les sources ont en général publié le mois précédent.
+on:
+  schedule:
+    - cron: "12 6 16 * *"     # le 16 à 6h12 UTC
+  workflow_dispatch:          # bouton "Run workflow" pour lancer à la main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publication          # un seul bloc publie à la fois
+  cancel-in-progress: false
+
+jobs:
+  climat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Dépendances Python
+        run: pip install -r requirements.txt
+
+      - name: Cache des fonds de carte
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/cartopy
+          key: cartopy-naturalearth-v2
+
+      # Chaque script écrit dans son propre dossier : si l'un échoue, les autres sont quand même
+      # publiés et l'ancienne version de celui qui a échoué reste en ligne.
+      - name: Température mondiale (HadCRUT5)
+        continue-on-error: true
+        env: { OUT_DIR: sortie/temperature }
+        run: python climat/temperature/build_temp.py
+
+      - name: Terres et océans (NOAA)
+        continue-on-error: true
+        env: { OUT_DIR: sortie/temperature }
+        run: python climat/temperature/build_terre_mer.py
+
+      - name: Mers par zone (ERSST v5)
+        continue-on-error: true
+        env: { OUT_DIR: sortie/mers }
+        run: python climat/mers/build_sst_zones.py
+
+      - name: France (Météo-France SIM)
+        continue-on-error: true
+        env: { OUT_DIR: sortie/france }
+        run: python climat/france/build_france.py
+
+      - name: Publier dans la branche "publication" (dossier climat/)
+        env:
+          REPO_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads "$REPO_URL" publication >/dev/null; then
+            git clone -q --depth 1 -b publication "$REPO_URL" pub
+          else
+            git init -q -b publication pub
+          fi
+          for bloc in temperature mers france; do
+            if [ -n "$(ls -A sortie/$bloc 2>/dev/null)" ]; then
+              mkdir -p pub/climat/$bloc && cp -r sortie/$bloc/. pub/climat/$bloc/
+            else
+              echo "::warning::$bloc : rien de produit, l'ancienne version reste en ligne"
+            fi
+          done
+          cd pub
+          git checkout -q --orphan maj          # un seul commit : l'historique ne grossit pas
+          git add -A
+          git commit -q -m "Climat – mise à jour du $(date -u +%F)"
+          git push -q -f "$REPO_URL" maj:publication

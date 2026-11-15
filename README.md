@@ -10,6 +10,12 @@ l'application iPhone.
 |---|---|---|---|---|---|
 | Météo – cartes Z500 J+0 → J+6 | `meteo/cartes_j6/` | `meteo-cartes-j6.yml` | chaque jour, 9h30 | `meteo/cartes-j6/` | ✅ prêt |
 | App – météo AROME (demain, sport, déplacement) | `app/meteo/` | `app-publication.yml` | à chaque modification | `app/meteo/` | 🧪 test |
+| App – onglet Climat (menus Température, Terre / mer, Banquise, Mers, France) | `app/climat/` | `app-publication.yml` | à chaque modification | `app/climat/` | 🧪 test |
+| Climat – température mondiale mensuelle depuis 1850 | `climat/temperature/` | `climat-mensuel.yml` | le 16 de chaque mois | `climat/temperature/` | 🧪 test |
+| Climat – banquise arctique et antarctique depuis 1978 | `climat/banquise/` | `climat-banquise.yml` | chaque jour | `climat/banquise/` | 🧪 test |
+| Climat – température terres / océans depuis 1850 | `climat/temperature/` | `climat-mensuel.yml` | le 16 de chaque mois | `climat/temperature/` | 🧪 test |
+| Climat – température des mers par zone depuis 1880 | `climat/mers/` | `climat-mensuel.yml` | le 16 de chaque mois | `climat/mers/` | 🧪 test |
+| Climat – France (température mensuelle, cartes mensuelles de l'année) | `climat/france/` | `climat-mensuel.yml` | le 16 de chaque mois | `climat/france/` | 🧪 test |
 | Climat – publications | — | — | — | — | à venir |
 | Bourse – résultats | — | — | — | — | à venir |
 | Sondages présidentielle | — | — | — | — | à venir |
@@ -63,6 +69,72 @@ dernier run **AROME** (Météo-France, 2,5 km) pour un point, via l'API gratuite
 
 Limites : domaine AROME (France et pays voisins), échéance d'environ 2 jours.
 Adresse une fois GitHub Pages activé : `https://<compte>.github.io/veille/app/meteo/`.
+
+## Climat – température mondiale
+
+`climat/temperature/build_temp.py` télécharge **HadCRUT5** (Met Office / CRU, terre + mer,
+mensuel depuis janvier 1850, Open Government Licence ; miroir GitHub en secours) et produit,
+dans la charte des cartes J+6 :
+- `temperature_mensuelle.png` : un point par mois coloré par l'écart (palette Z500), moyenne
+  glissante sur 12 mois, record annoté ; échelle de couleurs symétrique, neutre à 0 ;
+- `temperature_mensuelle.json` : la série recalculée, pour l'app.
+
+Axe de gauche : écart à **1850-1900** (préindustriel, référence de l'accord de Paris). Axe de
+droite : écart à **1991-2020** (normale OMM actuelle). Réglages en haut du script : `REF`, `REF2`,
+`LISSAGE_MOIS`, `SEUILS`, `A_LEVELS`. Test hors ligne : `python build_temp.py --csv fichier.csv`.
+
+## Climat – banquise
+
+`climat/banquise/build_banquise.py` télécharge l'étendue quotidienne du **NSIDC Sea Ice Index v4**
+(Arctique et Antarctique, depuis novembre 1978) et produit `banquise_arctique.png`,
+`banquise_antarctique.png` et `banquise.json`. Écart calculé jour par jour à la climatologie
+**1981-2010** (référence du NSIDC), puis moyenné par mois ; la normale 1991-2020 est en pointillés.
+Couleurs inversées par rapport à la température : moins de glace = rouge. Réglages en haut du
+script : `REF`, `REF2`, `A_MAX`, `JOURS_MIN`.
+
+## Climat – banquise au jour le jour
+
+`climat/banquise/build_banquise_annuel.py` (même source NSIDC) trace l'étendue quotidienne, une
+courbe par année de 1979 à l'an dernier (couleur = année), la moyenne 1981-2010, la normale
+1991-2020 et l'année en cours en noir : `banquise_annuelle_arctique.png`,
+`banquise_annuelle_antarctique.png`.
+
+## Climat – terres et océans
+
+`climat/temperature/build_terre_mer.py` télécharge les séries « land » et « ocean » de
+**NOAA Climate at a Glance** pour le Monde et les deux hémisphères, et la série « land_ocean »
+pour l'Arctique et l'Antarctique (la NOAA ne les sépare pas), les recalcule en écart à 1850-1900 et
+trace les moyennes annuelles (points) et sur 10 ans (traits) : `temperature_terre_mer_<region>.png`
+(monde, hn, hs, arctique, antarctique) et `temperature_terre_mer.json`. Les tropiques ne sont pas
+publiés par la NOAA.
+
+## Climat – température des mers par zone
+
+`climat/mers/build_sst_zones.py` télécharge **NOAA ERSST v5** (grille 2°, mensuelle) via l'ERDDAP
+CoastWatch, fait la moyenne de chaque zone (pondérée par la latitude) et trace l'écart à 1991-2020
+depuis 1880 : `sst_monde.png` (série « ocean » de NOAA Climate at a Glance), `sst_med.png`, `sst_nino12.png`, `sst_nino34.png` (avec seuils El Niño / La Niña),
+`sst_arctic.png`, et `sst_zones.json`. Zones réglables dans `ZONES` en haut du script.
+
+## Climat – France
+
+`climat/france/build_france.py` télécharge les fichiers annuels **SIM mensuelle** de Météo-France
+(analyse Safran-Isba, grille 8 km, depuis août 1958, Licence Ouverte Etalab 2.0), garde les points
+situés en France et produit :
+- `france_temperature_mensuelle.png` : température moyenne de la France, écart à 1991-2020
+  (normale 1961-1990 en pointillés), même gabarit que la température mondiale ;
+- `france_carte_temperature_AAAA-MM.png` : anomalie de température, une carte par mois de l'année
+  du dernier mois disponible (en janvier : les 12 mois de l'année passée) ;
+- `france_carte_precipitations_AAAA-MM.png` : cumul du mois en % de la normale 1991-2020 ;
+- `france_carte_temperature.png` / `france_carte_precipitations.png` : copies du dernier mois ;
+- `france.json` : séries et liste des cartes disponibles (lue par l'app pour le menu des mois).
+Cartes dans le gabarit des cartes J+6 (Lambert, fonds Natural Earth), grille 8 km interpolée à 2 km,
+avec les 96 chefs-lieux de département (ceux de la petite couronne en point seul).
+
+## App – onglet Climat
+
+Page `app/climat/index.html` : cinq onglets (Température, Terre / mer, Banquise, Mers, France) et, dans
+chacun, un menu de zones. Elle affiche les PNG de `climat/` (chemins relatifs, même arborescence
+dans le dépôt et dans la branche `publication`) et retient le dernier choix.
 
 ## Mise en place
 

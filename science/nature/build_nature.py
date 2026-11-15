@@ -367,7 +367,8 @@ def trier_mots_cles(items):
     res = {}
     for it in items:
         t = f" {it['titre_en']} {it.get('resume_nature', '')} ".lower()
-        res[it["doi"]] = [th["id"] for th in THEMES if any(k in t for k in th.get("mots_cles", []))]
+        res[it["doi"]] = [th["id"] for th in THEMES
+                          if any(re.search(r"(?<![a-z0-9])" + re.escape(k), t) for k in th.get("mots_cles", []))]
     return res
 
 
@@ -658,11 +659,11 @@ def test():
         compter("github", 10, 10)
         assert len(m) < 20000
         if "Thèmes :" in m:
-            return '{"1": ["climat"], "2": ["sport"], "3": []}'
+            return '{"1": ["climat"], "2": ["climat"], "3": []}'
         return json.dumps({"titre_fr": "Titre traduit", "en_une_phrase": "Une phrase.", "resume": "Résumé.",
                            "chiffres_cles": [{"valeur": "×3", "sens": "plus de reprises"}],
                            "schema": [{"etape": "Question", "texte": "a"}, {"etape": "Résultat", "texte": "b"}],
-                           "figure": {"numero": 2, "legende_fr": "Légende."}, "themes": ["sport", "inconnu"]})
+                           "figure": {"numero": 2, "legende_fr": "Légende."}, "themes": ["climat", "inconnu"]})
     IAS[:] = [{"nom": "claude", "texte_max": TEXTE_MAX, "appel": claude_sans_credit, "modele": lambda g: "claude"},
               {"nom": "github", "texte_max": TEXTE_MAX_GITHUB, "appel": faux_github, "modele": lambda g: "gpt"}]
     OUT_DIR, PREV_JSON = sortie / "b", ""
@@ -674,7 +675,7 @@ def test():
     assert f["fiche"] and f["mode"] == "ia" and f["modele"] == "gpt" and f["figure"]["numero"] == 2
     assert f["figure"]["legende_fr"] == "Légende."
     assert f["figure"]["credit"] == "Fig. 2 · Polo Rivera et al., Nature (2026) · CC BY 4.0", f["figure"]["credit"]
-    assert f["themes"] == ["sport"] and f["titre_fr"] == "Titre traduit"
+    assert f["themes"] == ["climat"] and f["titre_fr"] == "Titre traduit"
     assert [x["nom"] for x in IAS] == ["github"]
 
     # 3) plus aucune IA : traduction de secours (faux traducteur), puis rattrapage par IA le lendemain

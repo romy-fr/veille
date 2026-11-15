@@ -142,8 +142,8 @@ dans le dépôt et dans la branche `publication`) et retient le dernier choix.
 `science/nature/build_nature.py` lit chaque soir la liste des articles de recherche de **Nature**
 (`https://www.nature.com/nature/articles?type=article`) et ne traite que les nouveaux :
 1. **Tri** : une seule requête courte à Claude classe tous les titres du jour dans les thèmes de
-   `science/nature/themes.json` (Climat, Météo, IA & données, Sport & corps, Photo & optique — à modifier
-   librement). Sans clé API : tri par les mots-clés du même fichier.
+   `science/nature/themes.json` — pour l'instant un seul thème, **Climat** : réchauffement climatique et
+   AMOC (à compléter librement). Sans IA disponible : tri par les mots-clés du même fichier.
 2. **Accès libre seulement** : un article n'a de fiche que s'il porte l'étiquette « Open Access » et une
    licence Creative Commons sur sa page. Les articles payants d'un thème sont listés sans résumé (titre + lien).
 3. **Fiche** (Claude, d'après le texte de l'article hors méthodes et références) : titre original + titre

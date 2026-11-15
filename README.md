@@ -16,7 +16,8 @@ l'application iPhone.
 | Climat – température terres / océans depuis 1850 | `climat/temperature/` | `climat-mensuel.yml` | le 16 de chaque mois | `climat/temperature/` | 🧪 test |
 | Climat – température des mers par zone depuis 1880 | `climat/mers/` | `climat-mensuel.yml` | le 16 de chaque mois | `climat/mers/` | 🧪 test |
 | Climat – France (température mensuelle, cartes mensuelles de l'année) | `climat/france/` | `climat-mensuel.yml` | le 16 de chaque mois | `climat/france/` | 🧪 test |
-| Climat – publications | — | — | — | — | à venir |
+| Science – Nature (fiches en français des articles du jour, par thème) | `science/nature/` | `science-nature.yml` | chaque jour, 19h17 UTC | `science/nature/` | 🧪 test |
+| App – onglet Nature (thèmes, parutions, fiches, sauvegarde) | `app/nature/` | `app-publication.yml` | à chaque modification | `app/nature/` | 🧪 test |
 | Bourse – résultats | — | — | — | — | à venir |
 | Sondages présidentielle | — | — | — | — | à venir |
 | IA – actus | — | — | — | — | à venir |
@@ -135,6 +136,39 @@ avec les 96 chefs-lieux de département (ceux de la petite couronne en point seu
 Page `app/climat/index.html` : cinq onglets (Température, Terre / mer, Banquise, Mers, France) et, dans
 chacun, un menu de zones. Elle affiche les PNG de `climat/` (chemins relatifs, même arborescence
 dans le dépôt et dans la branche `publication`) et retient le dernier choix.
+
+## Science – Nature
+
+`science/nature/build_nature.py` lit chaque soir la liste des articles de recherche de **Nature**
+(`https://www.nature.com/nature/articles?type=article`) et ne traite que les nouveaux :
+1. **Tri** : une seule requête courte à Claude classe tous les titres du jour dans les thèmes de
+   `science/nature/themes.json` (Climat, Météo, IA & données, Sport & corps, Photo & optique — à modifier
+   librement). Sans clé API : tri par les mots-clés du même fichier.
+2. **Accès libre seulement** : un article n'a de fiche que s'il porte l'étiquette « Open Access » et une
+   licence Creative Commons sur sa page. Les articles payants d'un thème sont listés sans résumé (titre + lien).
+3. **Fiche** (Claude, d'après le texte de l'article hors méthodes et références) : titre original + titre
+   traduit, l'essentiel en une phrase, le graphique le plus parlant avec sa légende en français et son crédit
+   (licence CC), jusqu'à 3 chiffres clés, un résumé de 4 à 6 phrases, un schéma de conclusion en 3 à 5
+   étapes, puis le lien vers l'article.
+4. Sortie `nature.json` (30 derniers jours). La publication de la veille sert de mémoire : un article
+   n'est jamais lu ni résumé deux fois.
+
+Coût : ≈ 10 000 tokens par fiche, avec Claude Haiku par défaut (`MODELE_RESUME` dans le workflow pour
+passer à Sonnet), plafond de 12 fiches par soir (`MAX_FICHES`). Le compteur exact est dans
+`nature.json` → `usage`. Réglages en haut du script : `JOURS_ARCHIVE`, `MAX_FICHES`, `TEXTE_MAX`.
+Test hors ligne (pages Nature enregistrées dans `test/`) : `python science/nature/build_nature.py --test`.
+
+**Clé API** : dépôt GitHub → Settings → Secrets and variables → Actions → New repository secret,
+nom `ANTHROPIC_API_KEY` (clé créée sur console.anthropic.com). Sans clé, le bloc fonctionne quand même
+(tri par mots-clés, chapeau et résumé d'origine en anglais).
+
+## App – onglet Nature
+
+Page `app/nature/index.html` : choix du thème (avec le nombre d'articles), choix de la parution (la
+dernière par défaut, ou les 30 derniers jours), une fiche par article. Le bouton « ☆ Sauvegarder » garde
+la fiche complète et son lien dans le menu « ★ Sauvegardés » (mémoire du navigateur pour ce prototype ;
+l'app iPhone aura son propre stockage). Les graphiques sont affichés depuis le site de Springer Nature,
+avec leur crédit.
 
 ## Mise en place
 

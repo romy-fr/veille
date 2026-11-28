@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Météo AROME · test</title>
+<style>
+/* VOICE  sobre, lisible, prototype d'app iPhone (la charte viendra plus tard)
+   IDEA   une fiche de prévision qu'on lit en 5 secondes
+   COLOUR fond clair / nuit, accent bleu ciel, barre sport rouge→vert
+   TYPE   police système, 4 tailles
+   LAYOUT une colonne façon mobile, onglets en haut */
+:root{color-scheme:light dark;--bg:light-dark(#f4f6f8,#101418);--card:light-dark(#fff,#1a2027);--ink:light-dark(#14202b,#eef2f5);
+  --mute:light-dark(#5f6f7d,#93a3b0);--line:light-dark(#dfe5ea,#2a333c);--acc:light-dark(#1769d6,#62a8ff);--warn:#d9480f;--danger:#c92a2a}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:22px;margin:4px 0 2px}.sub{color:var(--mute);font-size:13px;margin:0 0 14px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-bottom:14px}
+.tabs button{border:0;background:none;color:var(--mute);font:600 15px/1 inherit;padding:11px;border-radius:9px;cursor:pointer}
+.tabs button.on{background:var(--acc);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+label{font-size:13px;color:var(--mute);display:block;margin-bottom:4px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+input[type=text],input[type=datetime-local]{width:100%;font:16px inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+button.go{border:0;background:var(--acc);color:#fff;font:600 16px inherit;padding:11px 16px;border-radius:10px;cursor:pointer;flex:0 0 auto}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.big{font-size:17px;line-height:1.6}.mute{color:var(--mute);font-size:13px}
+.err{color:var(--danger);font-size:14px;margin-top:8px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.k{background:var(--bg);border-radius:10px;padding:8px;text-align:center}.k b{display:block;font-size:20px}.k span{font-size:12px;color:var(--mute)}
+details summary{cursor:pointer;font-weight:600;padding:2px 0}
+.prefs{display:grid;gap:10px;margin-top:10px}.prefs fieldset{border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.prefs legend{font-size:13px;color:var(--mute);padding:0 4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips label{margin:0;color:var(--ink);font-size:14px;display:flex;align-items:center;gap:5px;
+  background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:5px 10px;cursor:pointer}
+.bar{display:grid;grid-template-columns:repeat(17,1fr);gap:2px;margin:12px 0 4px}
+.bar div{height:34px;border-radius:4px;position:relative}.bar div.best{outline:2px solid var(--ink);outline-offset:1px}
+.hours{display:grid;grid-template-columns:repeat(17,1fr);font-size:10px;color:var(--mute);text-align:center}
+.alert{border-left:4px solid var(--warn);background:light-dark(#fff4e6,#2b1d10);padding:8px 10px;border-radius:0;margin-top:10px;font-size:14px}
+.alert.danger{border-color:var(--danger);background:light-dark(#fff0f0,#2d1414)}
+.trip{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;text-align:center}
+.city b{display:block;font-size:17px}.city .emo{font-size:46px;line-height:1.2}.city .t{font-size:22px;font-weight:700}.city .f{font-size:13px;color:var(--mute)}
+.mid{font-size:30px;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:2px}.mid small{font-size:12px;color:var(--mute)}
+.mid i{display:block;width:60px;border-top:2px dashed var(--line)}
+.hide{display:none}
+footer{color:var(--mute);font-size:12px;text-align:center;margin-top:18px}
+@media(max-width:400px){.bar div{height:28px}.city .emo{font-size:38px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Météo AROME</h1>
+  <p class="sub">Prototype · dernier run AROME de Météo-France, interrogé point par point</p>
+  <div class="tabs" role="tablist">
+    <button id="tab-j1" class="on" role="tab">Demain</button>
+    <button id="tab-trip" role="tab">Déplacement</button>
+  </div>
+
+  <!-- ====== Onglet J+1 ====== -->
+  <section id="view-j1">
+    <div class="card">
+      <label for="city">Ville</label>
+      <div class="row"><input id="city" type="text" value="Paris" autocomplete="off"><button class="go" id="go-j1">Voir</button></div>
+      <div id="err-j1" class="err"></div>
+    </div>
+    <div class="card hide" id="res-j1">
+      <div class="mute" id="j1-head"></div>
+      <p class="big" id="j1-text"></p>
+      <div class="kpis" id="j1-kpis"></div>
+    </div>
+    <div class="card">
+      <details id="sport">
+        <summary>🏃 Option sport : la meilleure heure pour courir</summary>
+        <div class="prefs" id="prefs"></div>
+        <div id="sport-res"></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ====== Onglet déplacement ====== -->
+  <section id="view-trip" class="hide">
+    <div class="card">
+      <div class="row">
+        <div><label for="from">Départ</label><input id="from" type="text" value="Paris" autocomplete="off"></div>
+        <div><label for="to">Arrivée</label><input id="to" type="text" value="Marseille" autocomplete="off"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div><label for="t-dep">Heure de départ</label><input id="t-dep" type="datetime-local"></div>
+        <div><label for="t-arr">Heure d'arrivée</label><input id="t-arr" type="datetime-local"></div>
+      </div>
+      <div style="margin-top:10px;text-align:right"><button class="go" id="go-trip">Voir la météo</button></div>
+      <div id="err-trip" class="err"></div>
+    </div>
+    <div class="card hide" id="res-trip"></div>
+  </section>
+
+  <footer>Données : Météo-France (AROME, Licence Ouverte) via Open-Meteo.com · Géocodage : Open-Meteo / GeoNames</footer>
+</div>
+
+<script>
+{
+/* ---------- Données ---------- */
+const VARS = "temperature_2m,apparent_temperature,dew_point_2m,relative_humidity_2m,precipitation,snowfall,weather_code,cloud_cover,wind_speed_10m,wind_gusts_10m";
+const MODEL = "meteofrance_arome_france";   // AROME 2,5 km (France et alentours, ~2 jours)
+
+async function geocode(name) {
+  const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=fr&format=json`);
+  const j = await r.json();
+  if (!j.results || !j.results.length) throw new Error(`Ville « ${name} » introuvable.`);
+  const g = j.results[0];
+  return { name: g.name, region: g.admin1 || g.country || "", lat: g.latitude, lon: g.longitude };
+}
+
+async function arome(place) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${place.lat}&longitude=${place.lon}&hourly=${VARS}` +
+              `&models=${MODEL}&timezone=Europe%2FParis&forecast_days=3`;
+  const j = await (await fetch(url)).json();
+  if (j.error) throw new Error(j.reason || "Erreur du service météo.");
+  const H = j.hourly, rows = [];
+  for (let i = 0; i < H.time.length; i++) {
+    if (H.temperature_2m[i] == null) continue;          // hors domaine ou hors échéance AROME
+    rows.push({ time: H.time[i], t: H.temperature_2m[i], app: H.apparent_temperature[i], td: H.dew_point_2m[i],
+      rh: H.relative_humidity_2m[i], p: H.precipitation[i] || 0, snow: H.snowfall[i] || 0, code: H.weather_code[i], cc: H.cloud_cover ? H.cloud_cover[i] : null,
+      wind: H.wind_speed_10m[i], gust: H.wind_gusts_10m[i] });
+  }
+  if (!rows.length) throw new Error("Ce lieu est hors du domaine AROME (France et pays voisins).");
+  return rows.map(enrich);
+}
+
+/* ---------- Indices ---------- */
+function humidex(t, td) { const e = 6.11 * Math.exp(5417.753 * (1 / 273.16 - 1 / (273.15 + td))); return t + 0.5555 * (e - 10); }
+function windchill(t, v) { return (t <= 10 && v > 4.8) ? 13.12 + 0.6215 * t - 11.37 * v ** 0.16 + 0.3965 * t * v ** 0.16 : t; }
+function wcat(code, p, cc) {
+  if (code == null) {                       // code temps absent : on déduit de la pluie et des nuages
+    if (p >= 0.3) return "pluie";
+    return cc == null ? "nuageux" : cc >= 85 ? "gris" : cc >= 30 ? "nuageux" : "soleil";
+  }
+  if (code >= 95) return "orage";
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "neige";
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || p >= 0.3) return "pluie";
+  if (code === 3 || code === 45 || code === 48) return "gris";
+  return code <= 1 ? "soleil" : "nuageux";
+}
+const TCAT = t => t < 5 ? "froid" : t < 12 ? "frais" : t < 20 ? "tiède" : t < 27 ? "chaud" : "très chaud";
+const FCAT = td => td < 10 ? "sec" : td < 16 ? "humide" : td < 21 ? "lourd" : "très lourd";
+function enrich(h) {
+  h.hour = +h.time.slice(11, 13); h.day = h.time.slice(0, 10);
+  h.hx = humidex(h.t, h.td); h.wc = windchill(h.t, h.wind);
+  h.w = wcat(h.code, h.p, h.cc); h.tc = TCAT(h.t); h.fc = FCAT(h.td);
+  return h;
+}
+const EMO = { soleil: "☀️", nuageux: "⛅", gris: "☁️", pluie: "🌧️", neige: "🌨️", orage: "⛈️" };
+const WORD = { soleil: "ensoleillé", nuageux: "partiellement nuageux", gris: "gris", pluie: "pluvieux", neige: "neigeux", orage: "orageux" };
+const r0 = x => Math.round(x);
+const FEM = { sec: "sèche", humide: "humide", lourd: "lourde", "très lourd": "très lourde" };
+
+/* ---------- Résumé du lendemain (règles, sans IA) ---------- */
+function ranges(hours, test) {          // regroupe les heures consécutives qui vérifient test
+  const out = []; let cur = null;
+  for (const h of hours) {
+    if (test(h)) { if (cur && h.hour === cur.end + 1) { cur.end = h.hour; cur.items.push(h); } else { cur = { start: h.hour, end: h.hour, items: [h] }; out.push(cur); } }
+    else cur = null;
+  }
+  return out;
+}
+function summarize(day, city) {
+  const at = hr => day.find(h => h.hour === hr) || day[0];
+  const daytime = day.filter(h => h.hour >= 7 && h.hour <= 20);
+  const count = {}; daytime.forEach(h => count[h.w] = (count[h.w] || 0) + 1);
+  const dom = Object.entries(count).sort((a, b) => b[1] - a[1])[0][0];
+  const m = at(9), aft = day.filter(h => h.hour >= 12 && h.hour <= 18);
+  const tmax = aft.reduce((a, h) => h.t > a.t ? h : a, aft[0] || m);
+  const s = [];
+  let first = `Demain à ${city}, temps ${WORD[dom]}, ${r0(m.t)} °C en matinée`;
+  const d = tmax.t - m.t;
+  first += Math.abs(d) < 2 ? ", température stable dans la journée" :
+           d > 0 ? `, montant à ${r0(tmax.t)} °C l'après-midi` : `, baissant à ${r0(tmax.t)} °C l'après-midi`;
+  s.push(first + ".");
+  // Ressenti : vent froid ou chaleur lourde
+  const cold = day.filter(h => h.hour >= 7 && h.hour <= 20 && h.app <= h.t - 4);
+  const hot = day.filter(h => h.hour >= 7 && h.hour <= 20 && h.hx >= h.t + 4 && h.t >= 20);
+  const when = (list, h) => list.length >= 8 ? "en journée" : `vers ${h.hour}h`;
+  if (cold.length) { const c = cold.reduce((a, h) => h.app < a.app ? h : a); s.push(`Ressenti jusqu'à ${r0(c.app)} °C ${when(cold, c)} à cause du vent (rafales ${r0(c.gust)} km/h).`); }
+  if (hot.length) { const c = hot.reduce((a, h) => h.hx > a.hx ? h : a); s.push(`Ambiance ${FEM[c.fc]}, humidex ${r0(c.hx)} ${when(hot, c)}.`); }
+  // Orages, avec chute de température
+  for (const g of ranges(day, h => h.w === "orage")) {
+    const before = (day.find(h => h.hour === g.start - 1) || g.items[0]).t;
+    const after = Math.min(...day.filter(h => h.hour >= g.start && h.hour <= g.end + 2).map(h => h.t));
+    const drop = r0(before - after);
+    s.push(`Attention aux orages ${g.start === g.end ? `vers ${g.start}h` : `de ${g.start}h à ${g.end + 1}h`}` +
+           (drop >= 3 ? `, qui feront chuter la température d'environ ${drop} °C.` : "."));
+  }
+  // Pluie / neige (hors orages)
+  for (const g of ranges(day, h => (h.w === "pluie" || h.w === "neige") && h.hour >= 6)) {
+    const tot = g.items.reduce((a, h) => a + h.p, 0), snow = g.items.some(h => h.w === "neige");
+    if (tot < 0.5) continue;
+    const kind = snow ? "neige" : tot >= 8 ? "forte pluie" : tot >= 2 ? "pluie" : "faibles pluies";
+    s.push(`${kind[0].toUpperCase() + kind.slice(1)} de ${g.start}h à ${g.end + 1}h (${tot.toFixed(1).replace(".", ",")} mm).`);
+  }
+  const windy = day.filter(h => h.hour >= 6 && h.hour <= 22 && h.gust >= 60);
+  const gmax = (windy.length ? windy : day).reduce((a, h) => h.gust > a.gust ? h : a);
+  if (windy.length && !cold.length) s.push(`Vent fort : rafales jusqu'à ${r0(gmax.gust)} km/h ${when(windy, gmax)}.`);
+  return { text: s.join(" "), dom, m, tmax, gmax };
+}
+
+/* ---------- Option sport ---------- */
+const CATS = {
+  w: { label: "Type de temps", items: [["soleil", "Ensoleillé / nuageux"], ["gris", "Temps gris"], ["pluie", "Pluie / neige"], ["orage", "Orageux"]] },
+  tc: { label: "Température", items: [["froid", "Froid"], ["frais", "Frais"], ["tiède", "Tiède"], ["chaud", "Chaud"], ["très chaud", "Très chaud"]] },
+  fc: { label: "Ressenti", items: [["sec", "Sec"], ["humide", "Humide"], ["lourd", "Lourd"], ["très lourd", "Très lourd"]] },
+};
+const DEFAULT = { w: ["soleil", "gris"], tc: ["frais", "tiède"], fc: ["sec", "humide"] };
+let prefs = DEFAULT;
+try { prefs = JSON.parse(localStorage.getItem("sportPrefs")) || DEFAULT; } catch (e) {}
+const keyW = w => (w === "nuageux" ? "soleil" : w === "neige" ? "pluie" : w);
+
+function scoreHour(h) {
+  let s = 100; const why = [];
+  if (!prefs.w.includes(keyW(h.w))) s -= 35;
+  if (!prefs.tc.includes(h.tc)) s -= 30;
+  if (!prefs.fc.includes(h.fc)) s -= 25;
+  let danger = null;
+  if (h.w === "orage") { s = Math.min(s, 5); danger = "orage"; }
+  if (h.hx >= 46) { s = 0; danger = "humidex dangereux"; } else if (h.hx >= 40) { s = Math.min(s, 10); danger = "humidex très élevé"; }
+  else if (h.hx >= 35) s -= 20;
+  if (h.wc <= -28) { s = 0; danger = "refroidissement éolien dangereux"; } else if (h.wc <= -15) { s = Math.min(s, 20); danger = "froid ressenti intense"; }
+  return { s: Math.max(0, s), danger };
+}
+function sport(day) {
+  const hrs = day.filter(h => h.hour >= 6 && h.hour <= 22);
+  const sc = hrs.map(h => ({ h, ...scoreHour(h) }));
+  const best = sc.reduce((a, x) => x.s > a.s ? x : a, sc[0]);
+  const bar = sc.map(x => `<div title="${x.h.hour}h · ${r0(x.h.t)} °C · ${WORD[x.h.w]} · ${x.h.fc}" class="${x === best ? "best" : ""}"
+    style="background:hsl(${x.s * 1.2},68%,${x.danger ? 38 : 46}%)"></div>`).join("");
+  const dangers = sc.filter(x => x.danger);
+  let html = `<div class="bar">${bar}</div><div class="hours">${sc.map(x => `<span>${x.h.hour}</span>`).join("")}</div>`;
+  html += best.s >= 40
+    ? `<p class="big">Meilleur créneau : <b>${best.h.hour}h</b> — ${WORD[best.h.w]}, ${r0(best.h.t)} °C (ressenti ${r0(best.h.app)} °C), ambiance ${FEM[best.h.fc]}.</p>`
+    : `<p class="big">Aucun créneau ne correspond vraiment à tes préférences demain. Le moins mauvais : ${best.h.hour}h.</p>`;
+  if (dangers.length) {
+    const byType = {}; dangers.forEach(x => (byType[x.danger] = byType[x.danger] || []).push(x.h.hour));
+    html += Object.entries(byType).map(([k, v]) => `<div class="alert danger">⚠️ Évite de courir à ${v.map(x => x + "h").join(", ")} : ${k}.</div>`).join("");
+  }
+  return html;
+}
+function drawPrefs() {
+  document.getElementById("prefs").innerHTML = Object.entries(CATS).map(([k, c]) =>
+    `<fieldset><legend>${c.label}</legend><div class="chips">${c.items.map(([v, l]) =>
+      `<label><input type="checkbox" data-k="${k}" value="${v}" ${prefs[k].includes(v) ? "checked" : ""}> ${l}</label>`).join("")}</div></fieldset>`).join("");
+  document.querySelectorAll("#prefs input").forEach(i => i.onchange = () => {
+    prefs = { w: [], tc: [], fc: [] };
+    document.querySelectorAll("#prefs input:checked").forEach(c => prefs[c.dataset.k].push(c.value));
+    try { localStorage.setItem("sportPrefs", JSON.stringify(prefs)); } catch (e) {}
+    if (lastDay) document.getElementById("sport-res").innerHTML = sport(lastDay);
+  });
+}
+
+/* ---------- Onglet J+1 ---------- */
+let lastDay = null;
+async function runJ1() {
+  const err = document.getElementById("err-j1"); err.textContent = "";
+  try {
+    const place = await geocode(document.getElementById("city").value.trim());
+    const rows = await arome(place);
+    const tomorrow = new Date(Date.now() + 864e5).toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" });
+    const day = rows.filter(h => h.day === tomorrow);
+    if (day.length < 18) throw new Error("Le dernier run AROME ne couvre pas encore toute la journée de demain.");
+    lastDay = day;
+    const S = summarize(day, place.name);
+    document.getElementById("j1-head").textContent = `${place.name}${place.region ? ", " + place.region : ""} · ` +
+      new Date(tomorrow + "T12:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    document.getElementById("j1-text").textContent = `${EMO[S.dom]} ${S.text}`;
+    document.getElementById("j1-kpis").innerHTML =
+      `<div class="k"><b>${r0(S.m.t)}°</b><span>9h · ressenti ${r0(S.m.app)}°</span></div>` +
+      `<div class="k"><b>${r0(S.tmax.t)}°</b><span>${S.tmax.hour}h · ressenti ${r0(S.tmax.app)}°</span></div>` +
+      `<div class="k"><b>${r0(day.reduce((a, h) => a + h.p, 0))} mm</b><span>pluie sur 24 h</span></div>`;
+    document.getElementById("res-j1").classList.remove("hide");
+    document.getElementById("sport-res").innerHTML = sport(day);
+  } catch (e) { err.textContent = e.message || "Impossible de joindre le service météo."; }
+}
+
+/* ---------- Onglet déplacement ---------- */
+function nearest(rows, dateStr) {             // heure AROME la plus proche (arrondie à l'heure)
+  const t = new Date(dateStr); t.setMinutes(t.getMinutes() + 30); t.setMinutes(0, 0, 0);
+  const key = t.toLocaleString("sv-SE", { timeZone: "Europe/Paris" }).slice(0, 13).replace(" ", "T");
+  return rows.find(h => h.time.slice(0, 13) === key);
+}
+function cityCard(place, h, label) {
+  return `<div class="city"><span class="mute">${label} · ${h.hour}h</span><b>${place.name}</b><div class="emo">${EMO[h.w]}</div>
+    <div class="t">${r0(h.t)} °C</div><div class="f">ressenti ${r0(h.app)} °C${h.p >= 0.3 ? ` · ${h.p.toFixed(1).replace(".", ",")} mm` : ""}</div></div>`;
+}
+async function runTrip() {
+  const err = document.getElementById("err-trip"); err.textContent = "";
+  try {
+    const dep = document.getElementById("t-dep").value, arr = document.getElementById("t-arr").value;
+    if (!dep || !arr || new Date(arr) <= new Date(dep)) throw new Error("Indique une heure d'arrivée postérieure au départ.");
+    const [A, B] = await Promise.all([geocode(document.getElementById("from").value.trim()), geocode(document.getElementById("to").value.trim())]);
+    const [ra, rb] = await Promise.all([arome(A), arome(B)]);
+    const ha = nearest(ra, dep), hb = nearest(rb, arr);
+    if (!ha || !hb) throw new Error("Ces horaires dépassent l'échéance du dernier run AROME (environ 2 jours).");
+    const mins = Math.round((new Date(arr) - new Date(dep)) / 6e4);
+    const box = document.getElementById("res-trip");
+    box.innerHTML = `<div class="trip">${cityCard(A, ha, "Départ")}
+      <div class="mid">→<i></i><small>${Math.floor(mins / 60)} h ${String(mins % 60).padStart(2, "0")}</small></div>
+      ${cityCard(B, hb, "Arrivée")}</div>`;
+    box.classList.remove("hide");
+  } catch (e) { err.textContent = e.message || "Impossible de joindre le service météo."; }
+}
+
+/* ---------- Mise en route ---------- */
+function setTab(t) {
+  document.getElementById("tab-j1").classList.toggle("on", t === "j1");
+  document.getElementById("tab-trip").classList.toggle("on", t === "trip");
+  document.getElementById("view-j1").classList.toggle("hide", t !== "j1");
+  document.getElementById("view-trip").classList.toggle("hide", t !== "trip");
+}
+document.getElementById("tab-j1").onclick = () => setTab("j1");
+document.getElementById("tab-trip").onclick = () => setTab("trip");
+document.getElementById("go-j1").onclick = runJ1;
+document.getElementById("city").onkeydown = e => { if (e.key === "Enter") runJ1(); };
+document.getElementById("go-trip").onclick = runTrip;
+const local = d => new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+const now = new Date(); now.setMinutes(0, 0, 0); now.setHours(now.getHours() + 1);
+document.getElementById("t-dep").value = local(now);
+document.getElementById("t-arr").value = local(new Date(now.getTime() + 3.25 * 36e5));
+drawPrefs();
+if (typeof module !== "undefined") module.exports = { enrich, summarize, sport, humidex, windchill, scoreHour };
+}
+</script>
+</body>
+</html>
